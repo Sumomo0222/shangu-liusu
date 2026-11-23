@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="no-js" data-weather="sunny" data-time="dawn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>山谷留宿 · 把时间交还给山林 — 山间民宿（演示站点）</title>
+<meta name="description" content="山谷留宿：云岭深处的九间房，一眼山谷。温泉、山食与四条从门口出发的步道。本站为虚构的演示站点，地址、价格与可订日期均为演示内容。">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#4b3628">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%234b3628'/%3E%3Ccircle cx='35.6' cy='11.6' r='3.1' fill='none' stroke='%23f1e8d8' stroke-width='2.2'/%3E%3Cpath d='M8.5 32.6 18.6 15.2l6.3 11M29.2 24.9l4.9-7.6 5.4 9.3' fill='none' stroke='%23f1e8d8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M12 37.2h9.2M27.6 37.2h8.4' fill='none' stroke='%23f1e8d8' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/xiaowei.woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/css/scene.css">
+<link rel="stylesheet" href="assets/css/style.css">
+<script>document.documentElement.classList.replace('no-js', 'js');</script>
+</head>
+<body>
+<a class="skip" href="#story">跳到正文</a>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<!-- 全局 SVG：渐变、Logo、图标 -->
+<svg class="svgdefs" aria-hidden="true" focusable="false" width="0" height="0">
+  <defs>
+    <linearGradient id="skyGrad" gradientUnits="userSpaceOnUse" x1="0" y1="-260" x2="0" y2="640">
+      <stop offset="0" style="stop-color:var(--sky-1,#86abc7)"/><stop offset=".58" style="stop-color:var(--sky-2,#e9cfb2)"/><stop offset="1" style="stop-color:var(--sky-3,#f7e4c6)"/>
+    </linearGradient>
+    <radialGradient id="sunHalo"><stop offset="0" style="stop-color:var(--sun-halo,#ffd59a);stop-opacity:.62"/><stop offset=".45" style="stop-color:var(--sun-halo,#ffd59a);stop-opacity:.2"/><stop offset="1" style="stop-color:var(--sun-halo,#ffd59a);stop-opacity:0"/></radialGradient>
+    <radialGradient id="sunCore"><stop offset="0" style="stop-color:var(--sun-core,#fff7e2)"/><stop offset=".72" style="stop-color:var(--sun-core,#fff7e2);stop-opacity:.96"/><stop offset="1" style="stop-color:var(--sun-core,#fff7e2);stop-opacity:0"/></radialGradient>
+    <radialGradient id="moonCore"><stop offset="0" stop-color="#f6f8ff"/><stop offset="1" stop-color="#c9d8f0"/></radialGradient>
+    <radialGradient id="moonHalo"><stop offset="0" stop-color="#bcd2ff" stop-opacity=".5"/><stop offset=".4" stop-color="#a9c2ff" stop-opacity=".14"/><stop offset="1" stop-color="#a9c2ff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="fogPuff"><stop offset="0" style="stop-color:var(--fog,#f0f1ea);stop-opacity:.92"/><stop offset=".5" style="stop-color:var(--fog,#f0f1ea);stop-opacity:.4"/><stop offset="1" style="stop-color:var(--fog,#f0f1ea);stop-opacity:0"/></radialGradient>
+    <radialGradient id="steamPuff"><stop offset="0" style="stop-color:var(--steam,#fff);stop-opacity:.95"/><stop offset=".55" style="stop-color:var(--steam,#fff);stop-opacity:.34"/><stop offset="1" style="stop-color:var(--steam,#fff);stop-opacity:0"/></radialGradient>
+    <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--water-1,#dfe8e6)"/><stop offset="1" style="stop-color:var(--water-2,#9fb7b4)"/></linearGradient>
+    <linearGradient id="shadeV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".34"/></linearGradient>
+    <radialGradient id="fireGlow" cx=".5" cy=".78" r=".72"><stop offset="0" stop-color="#fff1b8"/><stop offset=".5" stop-color="#ffb457" stop-opacity=".6"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></radialGradient>
+    <linearGradient id="curtainFolds" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6b4a2c" stop-opacity=".55"/><stop offset=".05" stop-color="#fff" stop-opacity=".55"/><stop offset=".12" stop-color="#6b4a2c" stop-opacity=".5"/>
+      <stop offset=".18" stop-color="#fff" stop-opacity=".6"/><stop offset=".25" stop-color="#6b4a2c" stop-opacity=".45"/><stop offset=".29" stop-color="#fff" stop-opacity=".5"/>
+      <stop offset=".37" stop-color="#6b4a2c" stop-opacity=".55"/><stop offset=".43" stop-color="#fff" stop-opacity=".62"/><stop offset=".5" stop-color="#6b4a2c" stop-opacity=".5"/>
+      <stop offset=".55" stop-color="#fff" stop-opacity=".5"/><stop offset=".63" stop-color="#6b4a2c" stop-opacity=".55"/><stop offset=".69" stop-color="#fff" stop-opacity=".6"/>
+      <stop offset=".76" stop-color="#6b4a2c" stop-opacity=".45"/><stop offset=".81" stop-color="#fff" stop-opacity=".55"/><stop offset=".88" stop-color="#6b4a2c" stop-opacity=".55"/>
+      <stop offset=".94" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#6b4a2c" stop-opacity=".55"/>
+    </linearGradient>
+  </defs>
+  <symbol id="logo-mark" viewBox="0 0 48 48">
+    <rect x="2.5" y="2.5" width="43" height="43" rx="10.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
+    <circle cx="35.6" cy="11.6" r="3.1" fill="none" stroke="currentColor" stroke-width="2.2"/>
+    <path d="M8.5 32.6 18.6 15.2l6.3 11M29.2 24.9l4.9-7.6 5.4 9.3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 37.2h9.2M27.6 37.2h8.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3 7 7M17 17l1.7 1.7M18.7 5.3 17 7M7 17l-1.7 1.7"/></symbol>
+  <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 15.5a4.2 4.2 0 0 1-.5-8.4 5.4 5.4 0 0 1 10.5 1.1A3.7 3.7 0 0 1 17 15.5H7Z"/><path d="M8.5 18l-1 2.6M12.5 18l-1 2.6M16.5 18l-1 2.6"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.6 4.8 12 7l2.4-2.2M9.6 19.2 12 17l2.4 2.2"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.2 2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6.4-6 6.4-11a6.4 6.4 0 1 0-12.8 0C5.6 15 12 21 12 21Z"/><circle cx="12" cy="10" r="2.3"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13.5 6.5 19 12l-5.5 5.5"/></symbol>
+</svg>
+
+<header class="topbar" id="topbar">
+  <a class="brand" href="#top" aria-label="山谷留宿，回到顶部">
+    <svg class="brand__mark" aria-hidden="true"><use href="#logo-mark"/></svg>
+    <span class="brand__text"><b>山谷留宿</b><i>VALLEY STAY</i></span>
+  </a>
+  <nav class="nav" aria-label="章节">
+    <a href="#rooms">房型</a><a href="#onsen">温泉</a><a href="#dining">餐食</a><a href="#spaces">公共空间</a><a href="#routes">周边路线</a><a href="#rules">入住须知</a>
+  </nav>
+  <div class="topbar__right">
+    <div class="seg seg--icons" role="radiogroup" aria-label="切换天气">
+      <button type="button" role="radio" aria-checked="true" data-weather-btn="sunny" title="晴天"><svg class="ic"><use href="#i-sun"/></svg></button>
+      <button type="button" role="radio" aria-checked="false" data-weather-btn="rainy" title="雨天"><svg class="ic"><use href="#i-rain"/></svg></button>
+      <button type="button" role="radio" aria-checked="false" data-weather-btn="snowy" title="雪天"><svg class="ic"><use href="#i-snow"/></svg></button>
+    </div>
+    <button type="button" class="clockchip" id="clockBtn" aria-expanded="false" aria-controls="timePop" aria-label="切换时刻">
+      <svg class="ic ic--time"><use href="#i-sun"/></svg><span data-day></span><b data-clock>06:12</b>
+    </button>
+    <a class="btn btn--sm topbar__cta" href="#book">预约入住</a>
+    <button type="button" class="menu-btn" id="menuBtn" aria-label="打开菜单" aria-expanded="false" aria-controls="menuSheet"><i></i><i></i></button>
+  </div>
+</header>
+
+<div class="popover" id="timePop" hidden>
+  <p class="popover__title">想看哪个时刻的山谷？</p>
+  <div class="seg seg--col" role="radiogroup" aria-label="切换时刻">
+    <button type="button" role="radio" aria-checked="true" data-time-btn="auto">跟着页面走<small>往下滚，时间会自己往前</small></button>
+    <button type="button" role="radio" aria-checked="false" data-time-btn="dawn">清晨<small>雾还没散</small></button>
+    <button type="button" role="radio" aria-checked="false" data-time-btn="day">白天<small>阳光落在檐廊</small></button>
+    <button type="button" role="radio" aria-checked="false" data-time-btn="dusk">黄昏<small>灯一盏盏亮起来</small></button>
+    <button type="button" role="radio" aria-checked="false" data-time-btn="night">夜晚<small>只剩炉火和虫鸣</small></button>
+  </div>
+</div>
+
+<nav class="rail" id="rail" aria-label="这一天的时间线">
+  <ol>
+    <li><a href="#story" data-rail="story" data-label="山与屋 · 07:20" aria-label="山与屋，07:20"></a></li>
+    <li><a href="#rooms" data-rail="rooms" data-label="房型 · 09:30" aria-label="房型，09:30"></a></li>
+    <li><a href="#onsen" data-rail="onsen" data-label="谷汤 · 15:40" aria-label="谷汤，15:40"></a></li>
+    <li><a href="#dining" data-rail="dining" data-label="山食 · 18:00" aria-label="山食，18:00"></a></li>
+    <li><a href="#spaces" data-rail="spaces" data-label="檐下 · 21:10" aria-label="檐下，21:10"></a></li>
+    <li><a href="#routes" data-rail="routes" data-label="进山 · 次日 07:00" aria-label="进山，次日 07:00"></a></li>
+    <li><a href="#book" data-rail="book" data-label="预约 · 09:10" aria-label="预约，09:10"></a></li>
+  </ol>
+</nav>
+
+<main id="main">
+
+<!-- ================= 首屏：从室内的窗看出去 ================= -->
+<section class="hero" id="top" aria-label="山谷留宿">
+  <div class="hero__scene">
+    <svg class="vista" id="heroSvg" data-frame viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <g class="ly ly-sky" data-layer="sky"></g>
+      <g class="ly ly-r5" data-layer="r5"></g>
+      <g class="ly ly-fog1" data-layer="fog1"></g>
+      <g class="ly ly-r4" data-layer="r4"></g>
+      <g class="ly ly-fog2" data-layer="fog2"></g>
+      <g class="ly ly-r3" data-layer="r3"></g>
+      <g class="ly ly-fog3" data-layer="fog3"></g>
+      <g class="ly ly-r2" data-layer="r2"></g>
+      <g class="ly ly-r2" data-layer="heroMid"></g>
+      <g class="ly ly-r2" data-layer="fog4"></g>
+      <g class="ly ly-fore" data-layer="fore"></g>
+      <g class="ly ly-r2" data-layer="fireflies"></g>
+      <g class="ly ly-r2 glass-rain-wrap" data-layer="glassRain"></g>
+    </svg>
+    <div class="hero__scrim"></div>
+    <div class="hero__vignette"></div>
+    <div class="hero__grain"></div>
+  </div>
+
+  <div class="frame" aria-hidden="true">
+    <i class="frame__lintel"></i><i class="frame__l"></i><i class="frame__r"></i><i class="frame__sill"></i>
+    <svg class="curtain curtain--l" viewBox="0 0 220 900" preserveAspectRatio="none">
+      <g class="sway sway-b"><g class="sway sway-a">
+        <path class="cloth" d="M0,0H220V806C198,828 176,804 150,826C124,848 98,812 72,834C48,854 24,826 0,846Z"/>
+        <path class="folds" d="M0,0H220V806C198,828 176,804 150,826C124,848 98,812 72,834C48,854 24,826 0,846Z"/>
+        <path class="hem" d="M0,846C24,826 48,854 72,834C98,812 124,848 150,826C176,804 198,828 220,806"/>
+        <path class="rod" d="M0,0H220V20H0Z"/>
+      </g></g>
+    </svg>
+    <svg class="curtain curtain--r" viewBox="0 0 220 900" preserveAspectRatio="none">
+      <g class="sway sway-b"><g class="sway sway-a">
+        <path class="cloth" d="M0,0H220V806C198,828 176,804 150,826C124,848 98,812 72,834C48,854 24,826 0,846Z"/>
+        <path class="folds" d="M0,0H220V806C198,828 176,804 150,826C124,848 98,812 72,834C48,854 24,826 0,846Z"/>
+        <path class="hem" d="M0,846C24,826 48,854 72,834C98,812 124,848 150,826C176,804 198,828 220,806"/>
+        <path class="rod" d="M0,0H220V20H0Z"/>
+      </g></g>
+    </svg>
+    <svg class="prop prop--tea" viewBox="0 0 140 130">
+      <ellipse class="prop__shadow" cx="70" cy="119" rx="46" ry="6"/>
+      <path class="handle" d="M104,72c17,-2 19,19 -3,23"/>
+      <path class="cup-shade" d="M34,62H106L100,112Q70,122 40,112Z"/>
+      <path class="cup" d="M36,64H104L99,108Q70,117 41,108Z"/>
+      <ellipse class="cup-top" cx="70" cy="63" rx="34" ry="8.4"/>
+      <ellipse class="tea" cx="70" cy="63" rx="28.5" ry="6.2"/>
+      <ellipse class="tea-glint" cx="61" cy="61.6" rx="9" ry="1.7"/>
+      <g class="prop-steam"><path d="M57,50c-6,-9 6,-13 0,-24"/><path d="M71,50c-6,-9 6,-13 0,-24"/><path d="M85,50c-6,-9 6,-13 0,-24"/></g>
+    </svg>
+    <svg class="prop prop--vase" viewBox="0 0 150 206">
+      <ellipse class="prop__shadow" cx="66" cy="199" rx="36" ry="5"/>
+      <g class="branch">
+        <path class="branch-stroke" style="stroke-width:3.6" d="M66,104C72,70 86,44 114,18"/>
+        <path class="branch-stroke" style="stroke-width:2.4" d="M82,60c10,-3 19,-11 30,-14M94,40c-5,-9 -3,-18 -1,-27"/>
+        <ellipse class="needle" cx="112" cy="17" rx="17" ry="4" transform="rotate(-40 112 17)"/><ellipse class="needle-lit" cx="108" cy="20" rx="12" ry="2.6" transform="rotate(-40 108 20)"/>
+        <ellipse class="needle" cx="110" cy="47" rx="15" ry="3.6" transform="rotate(-16 110 47)"/><ellipse class="needle-lit" cx="106" cy="49" rx="10" ry="2.2" transform="rotate(-16 106 49)"/>
+        <ellipse class="needle" cx="93" cy="14" rx="14" ry="3.4" transform="rotate(-78 93 14)"/><ellipse class="needle-lit" cx="90" cy="16" rx="9" ry="2" transform="rotate(-78 90 16)"/>
+        <ellipse class="needle" cx="78" cy="78" rx="13" ry="3.2" transform="rotate(-34 78 78)"/>
+      </g>
+      <path class="vase" d="M56,100c-17,11 -24,36 -15,64c4,15 13,35 25,35s21,-20 25,-35c9,-28 2,-53 -15,-64l-2,-13h-16z"/>
+      <path class="vase-glaze" d="M50,122c-5,10 -6,22 -3,34c1,5 6,4 6,-2c-2,-11 -1,-22 3,-30c2,-4 -4,-6 -6,-2z"/>
+    </svg>
+  </div>
+
+  <div class="hero__ui">
+    <div class="hero__copy">
+      <p class="hero__eyebrow"><span>VALLEY STAY</span><i>·</i><span>云岭 · 海拔 1,280 m</span></p>
+      <h1 class="hero__title">把时间<br>交还给山林</h1>
+      <p class="hero__lead">九间房，一眼山谷。没有闹钟，也没有行程表，只有雾什么时候散，和晚饭什么时候好。</p>
+      <div class="hero__links">
+        <button type="button" class="btn btn--ink" data-goto="book" data-focus="calendar">选择日期</button>
+        <button type="button" class="btn btn--ghost" data-preview="jianshan">预览房型</button>
+        <button type="button" class="btn btn--ghost" data-route="mist">周边路线</button>
+      </div>
+    </div>
+
+    <aside class="atmo" aria-label="山谷此刻的天气">
+      <div class="atmo__head">
+        <span class="atmo__label">此刻的山谷</span>
+        <span class="atmo__clock"><i data-day></i><b data-clock>06:12</b></span>
+      </div>
+      <div class="seg seg--weather" role="radiogroup" aria-label="切换天气">
+        <button type="button" role="radio" aria-checked="true" data-weather-btn="sunny"><svg class="ic"><use href="#i-sun"/></svg>晴</button>
+        <button type="button" role="radio" aria-checked="false" data-weather-btn="rainy"><svg class="ic"><use href="#i-rain"/></svg>雨</button>
+        <button type="button" role="radio" aria-checked="false" data-weather-btn="snowy"><svg class="ic"><use href="#i-snow"/></svg>雪</button>
+      </div>
+      <dl class="atmo__facts">
+        <div><dt>气温</dt><dd data-wx="temp">12°C</dd></div>
+        <div><dt>湿度</dt><dd data-wx="hum">48%</dd></div>
+        <div><dt>风</dt><dd data-wx="wind">北风 2 级</dd></div>
+      </dl>
+      <p class="atmo__note"><b data-wx="feel">雾正在散</b><span data-time-note>雾还没散</span></p>
+      <p class="atmo__line" data-wx="line"></p>
+    </aside>
+  </div>
+
+  <div class="bookbar" role="group" aria-label="快速预约">
+    <button type="button" class="field field--date" data-goto="book" data-focus="calendar"><small>入住 — 离店</small><b data-sum="dates">选择日期</b></button>
+    <button type="button" class="field" data-goto="book" data-focus="room"><small>房型</small><b data-sum="room">见山房</b></button>
+    <button type="button" class="field field--sm" data-goto="book" data-focus="guest"><small>人数</small><b data-sum="guests">2 位</b></button>
+    <a class="btn btn--primary" href="#book">预约入住<em>演示</em></a>
+  </div>
+  <p class="hero__demo"><span class="tag tag--demo">演示站点</span>地址、价格与可订日期均为虚构内容</p>
+</section>
+
+<!-- ================= 01 山与屋 ================= -->
+<section class="story" id="story">
+  <div class="wrap story__grid">
+    <div class="story__window" data-anim>
+      <div class="porthole">
+        <svg class="vista" viewBox="430 330 820 820" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+          <g data-layer="sky"></g><g data-layer="r5"></g><g data-layer="fog1"></g><g data-layer="r4"></g><g data-layer="fog2"></g><g data-layer="r3"></g>
+          <g data-layer="fog3"></g><g data-layer="r2"></g><g data-layer="heroMid"></g><g data-layer="fog4"></g><g data-layer="fore"></g><g data-layer="fireflies"></g>
+        </svg>
+      </div>
+      <p class="cap"><i class="cap__live"></i>窗外 · <span data-day></span><span data-clock>06:12</span> · <span data-wx="label">晴</span> · 这扇窗会跟着页面变</p>
+    </div>
+
+    <div class="story__text">
+      <p class="kicker" data-anim><b>01</b><span>山与屋</span><i>THE HOUSE</i></p>
+      <h2 class="sec-title" data-anim>把时间交还给山林</h2>
+      <div class="story__cols" data-anim>
+        <p>2019 年秋天，我们在云岭深处迷了路。雾散的时候，眼前是一间荒废的林场管护站：屋顶塌了一半，窗框还结实。我们在门口站了很久，谁也没说话。</p>
+        <p>两年后，它成了山谷留宿。沈树带着两位老木匠，把倒下的梁重新架起来；阿岚在屋后挖出了那眼温泉。旧窗我们都留着，因为从那里看出去的山谷，和二十年前护林员看到的，是同一座。</p>
+        <p>这里只有九间房。没有电视，Wi-Fi 只在壁炉厅有一格信号。我们希望你把时间交还给山林——早晨被鸟叫醒，白天去走一条小路，晚上守着炉火，读完半本书。</p>
+      </div>
+      <ol class="principles" data-anim>
+        <li><b>01</b><h3>九间房，不再多一间</h3><p>住客少，山谷才安静。我们从不超售。</p></li>
+        <li><b>02</b><h3>没有电视，有炉火和书</h3><p>三千册书，读完可以留下你带来的那一本。</p></li>
+        <li><b>03</b><h3>一日三餐，跟着时令</h3><p>今天吃什么，看后园的菜地和山里刚长出来的东西。</p></li>
+        <li><b>04</b><h3>能走就不开车</h3><p>四条步道，都从门口出发。</p></li>
+      </ol>
+      <div class="story__meta" data-anim>
+        <dl class="facts">
+          <div><dd>1,280<small>m</small></dd><dt>海拔</dt></div>
+          <div><dd>9<small>间</small></dd><dt>客房</dt></div>
+          <div><dd>23<small>km</small></dd><dt>离最近的小镇</dt></div>
+          <div><dd>41.5<small>°C</small></dd><dt>温泉</dt></div>
+          <div><dd>3,000<small>册</small></dd><dt>可以借走的书</dt></div>
+        </dl>
+        <ol class="timeline">
+          <li><b>2019</b>迷路</li><li><b>2020</b>动工</li><li><b>2022</b>第一位住客</li><li><b>2024</b>第九间房</li><li><b>至今</b>不再扩建</li>
+        </ol>
+      </div>
+      <p class="story__hosts" data-anim>主理人 阿岚 &amp; 沈树 <span>·</span> 板栗和栗子（狗）<span class="tag tag--demo">品牌故事为虚构示例</span></p>
+    </div>
+    <div class="seal" aria-hidden="true"><span>留</span><span>山</span><span>宿</span><span>谷</span></div>
+  </div>
+  <figure class="wrap story__band" data-anim>
+    <p class="story__band-title">窗外的一天<small>摄影素材来自 Unsplash，仅作氛围示意</small></p>
+    <div class="story__photo story__photo--wide ph-tint"><img class="ph" src="assets/img/story-dawn.webp" alt="清晨，雾气在层叠的山丘之间" loading="lazy" decoding="async"><figcaption><b>06:40</b>雾从谷底往上爬</figcaption></div>
+    <div class="story__photo ph-tint"><img class="ph" src="assets/img/cabin-dusk.webp" alt="暮色中的木屋，窗户透出暖光" loading="lazy" decoding="async"><figcaption><b>18:50</b>灯一盏盏亮起来</figcaption></div>
+    <div class="story__photo ph-tint"><img class="ph" src="assets/img/ridges-blue.webp" alt="蓝调时分层层远去的山脊" loading="lazy" decoding="async"><figcaption><b>23:10</b>只剩炉火和虫鸣</figcaption></div>
+  </figure>
+</section>
+
+<!-- ================= 02 房型 ================= -->
+<section class="sec rooms" id="rooms">
+  <div class="wrap">
+    <header class="sec-head" data-anim>
+      <p class="kicker"><b>02</b><span>住</span><i>ROOMS</i><span class="k-clock"><svg class="ic"><use href="#i-clock"/></svg>这一刻 <span data-day></span><span data-clock>09:30</span></span></p>
+      <h2 class="sec-title">九间房，四种看山的角度</h2>
+      <p class="sec-lead">每一间都朝向山谷，只是看的角度不同。所有房间都不设电视，窗都开得很大。<span class="hint">把鼠标停在卡片上，或轻点卡片，可以看到面积、床型和设施。</span></p>
+    </header>
+    <div class="rooms__grid" data-list="rooms"></div>
+    <p class="sec-note" data-anim><span class="tag tag--demo">演示价格</span>以上价格为演示内容，含双早；周五、周六为周末价。房态见页面下方的日历，同为演示数据。</p>
+  </div>
+</section>
+
+<!-- ================= 03 温泉 ================= -->
+<section class="onsen" id="onsen">
+  <div class="onsen__scene" aria-hidden="true">
+    <svg class="vista" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" focusable="false">
+      <g transform="translate(0,-170)">
+        <g data-layer="sky"></g><g data-layer="r5"></g><g data-layer="fog1"></g><g data-layer="r4"></g><g data-layer="fog2"></g><g data-layer="r3"></g><g data-layer="fog3"></g>
+      </g>
+      <g data-layer="onsenFore"></g>
+    </svg>
+  </div>
+  <div class="wrap onsen__inner">
+    <div class="onsen__copy">
+      <p class="kicker" data-anim><b>03</b><span>浴</span><i>THE VALLEY BATH</i><span class="k-clock"><svg class="ic"><use href="#i-clock"/></svg>这一刻 <span data-day></span><span data-clock>15:40</span></span></p>
+      <h2 class="sec-title" data-anim>把身体交给<br>41.5°C 的山泉</h2>
+      <p class="sec-lead" data-anim>屋后那眼温泉是阿岚挖出来的。我们没有把它围起来，只是让池子贴着山崖——泡下去的时候，眼前就是整条山谷。</p>
+      <dl class="onsen__facts" data-anim>
+        <div><dt>泉质</dt><dd>单纯温泉 · 弱碱性 pH 8.2</dd></div>
+        <div><dt>温度</dt><dd>出水 58°C · 池内 41.5°C</dd></div>
+        <div><dt>池型</dt><dd>露天 ×2 · 室内汤屋 ×1</dd></div>
+        <div><dt>时间</dt><dd>07:00 – 10:00 · 15:00 – 23:00</dd></div>
+      </dl>
+      <ul class="chips" data-anim>
+        <li>入浴前先冲淋</li><li>不穿泳衣</li><li>长发请束起</li><li>刺青可入浴</li><li>一次 15 分钟为宜</li><li>池边有凉茶</li>
+      </ul>
+      <p class="onsen__now" data-anim data-wx="onsen"></p>
+    </div>
+    <div class="onsen__photos" data-anim>
+      <figure class="onsen__photo onsen__photo--b"><img class="ph" src="assets/img/snow-frost.webp" alt="雪天池边结霜的松枝" loading="lazy" decoding="async"><figcaption>雪天 · 池边的松枝会结霜</figcaption></figure>
+      <figure class="onsen__photo onsen__photo--a"><img class="ph" src="assets/img/detail-tub.webp" alt="室内汤屋：引入谷汤泉水的石浴缸" loading="lazy" decoding="async"><figcaption>室内汤屋 · 引的是同一眼泉</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 04 餐食 ================= -->
+<section class="sec dining" id="dining">
+  <div class="wrap dining__grid">
+    <div class="dining__side">
+      <p class="kicker" data-anim><b>04</b><span>食</span><i>THE TABLE</i><span class="k-clock"><svg class="ic"><use href="#i-clock"/></svg>这一刻 <span data-day></span><span data-clock>18:00</span></span></p>
+      <h2 class="sec-title" data-anim>一日三食，<br>跟着山里的时令</h2>
+      <p class="sec-lead" data-anim>没有菜单可以点。每天吃什么，看后园的菜地、邻村阿婆的豆腐，和山里刚刚长出来的东西。八成食材来自三十公里内。</p>
+      <p class="dining__source" data-anim>后园菜地 · 邻村豆腐 · 山笋与菌子 · 溪鱼 · 土锅米饭</p>
+      <p class="dining__hint" data-anim>高亮的那一餐，是页面时钟此刻走到的地方。</p>
+      <ul class="dining__notes" data-anim>
+        <li>忌口请在预约时备注，最晚提前 24 小时</li>
+        <li>晚餐是一起吃的长桌，想独处可以端回房间</li>
+        <li><span class="tag tag--demo">演示价格</span>以上价格均为演示内容</li>
+      </ul>
+    </div>
+    <div class="dining__list" data-list="meals" data-anim></div>
+  </div>
+</section>
+
+<!-- ================= 05 公共空间 ================= -->
+<section class="spaces" id="spaces">
+  <div class="wrap">
+    <header class="sec-head" data-anim>
+      <p class="kicker"><b>05</b><span>聚</span><i>COMMON SPACES</i><span class="k-clock"><svg class="ic"><use href="#i-clock"/></svg>这一刻 <span data-day></span><span data-clock>21:10</span></span></p>
+      <h2 class="sec-title">到了晚上，大家都会聚到这里</h2>
+      <p class="sec-lead">九间房的住客，加起来不到二十个人。炉火九点生起来，谁先坐下，谁负责翻烤糯米团子。</p>
+    </header>
+    <div class="spaces__grid">
+      <figure class="spaces__stage" data-anim data-space-stage>
+        <img id="spaceImg" src="assets/img/space-fireplace.webp" alt="壁炉厅：燃着火的壁炉、书架与两把扶手椅" loading="lazy" decoding="async">
+        <div class="spaces__glow" aria-hidden="true"></div>
+        <figcaption><b data-space-name>壁炉厅</b><span data-space-time>21:10</span><span data-space-cap>炉火正旺</span></figcaption>
+      </figure>
+      <div class="spaces__side" data-anim>
+        <ol class="spaces__index" data-list="spaces"></ol>
+        <div class="spaces__desc"><h3 data-space-title>壁炉厅</h3><p data-space-desc></p></div>
+        <ul class="chips" data-anim>
+          <li>洗衣房（投币）</li><li>小卖部 · 山货与手作</li><li>瑜伽平台（清晨可借用）</li><li>停车场 8 个车位</li><li>充电桩 ×2</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 06 周边路线 ================= -->
+<section class="sec routes" id="routes">
+  <div class="wrap">
+    <header class="sec-head" data-anim>
+      <p class="kicker"><b>06</b><span>行</span><i>TRAILS FROM THE DOOR</i><span class="k-clock"><svg class="ic"><use href="#i-clock"/></svg>这一刻 <span data-day>次日 </span><span data-clock>07:00</span></span></p>
+      <h2 class="sec-title">四条路，都从门口出发</h2>
+      <p class="sec-lead">睡了一晚，第二天进山。路都不难找，出发前在壁炉厅的地图上写下预计返回时间就好。</p>
+    </header>
+    <div class="routes__grid">
+      <div class="mapcard" data-anim>
+        <svg id="routeMap" viewBox="0 0 760 620" role="img" aria-label="民宿周边步道手绘地图"></svg>
+        <div class="mapcard__bar"><span><svg class="ic"><use href="#i-pin"/></svg>山谷留宿</span><span class="mapcard__scale">0 ───── 1 km</span></div>
+      </div>
+      <div class="routes__list" data-list="routes" data-anim></div>
+    </div>
+    <div class="wxstrip" data-anim>
+      <div class="wxstrip__head">
+        <h3 class="wxstrip__title">换一种天气，山谷是另一副样子</h3>
+        <p class="wxstrip__sub">点一张卡片切换天气，整页——窗外、照片的调色、路线建议——都会跟着变。</p>
+      </div>
+      <div class="wxstrip__cards" data-list="wx"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 07 住客说 ================= -->
+<section class="sec reviews" id="reviews">
+  <div class="wrap">
+    <header class="sec-head" data-anim>
+      <p class="kicker"><b>07</b><span>住客说</span><i>GUEST NOTES</i></p>
+      <h2 class="sec-title">留在留言本上的字</h2>
+      <p class="sec-lead">留言本在壁炉厅的长桌上。<span class="tag tag--demo">示例评价</span>以下评价与署名均为虚构的示例内容。</p>
+    </header>
+  </div>
+  <div class="reviews__scroller" data-list="reviews" data-anim></div>
+</section>
+
+<!-- ================= 08 入住须知 ================= -->
+<section class="sec rules" id="rules">
+  <div class="wrap rules__grid">
+    <div class="rules__side">
+      <p class="kicker" data-anim><b>08</b><span>入住须知</span><i>HOUSE RULES</i></p>
+      <h2 class="sec-title" data-anim>几件小事，<br>让山谷保持安静</h2>
+      <p class="sec-lead" data-anim>我们只有九间房，规则也不多。出发前花两分钟读一遍就好。</p>
+      <p class="sec-note" data-anim><span class="tag tag--demo">演示条款</span>以下规则与取消政策均为演示内容。</p>
+    </div>
+    <div class="rules__list" data-list="rules" data-anim></div>
+  </div>
+</section>
+
+<!-- ================= 09 预约 ================= -->
+<section class="sec book" id="book">
+  <div class="wrap">
+    <header class="sec-head" data-anim>
+      <p class="kicker"><b>09</b><span>预约</span><i>BOOK A STAY</i><span class="k-clock"><svg class="ic"><use href="#i-clock"/></svg>这一刻 <span data-day>次日 </span><span data-clock>09:10</span></span></p>
+      <h2 class="sec-title">选一天，把时间交还给山林</h2>
+    </header>
+    <div class="book__box" data-anim>
+      <div class="book__cal" data-book-focus="calendar">
+        <div class="cal" data-calendar></div>
+        <div class="cal__legend">
+          <span><i class="dot dot--free"></i>可预订</span><span><i class="dot dot--few"></i>仅剩 1 间</span><span><i class="dot dot--full"></i>已订满</span><span><i class="dot dot--closed"></i>不开放</span>
+        </div>
+        <p class="note"><span class="tag tag--demo">演示日期</span>可预订日期由页面按规则自动生成，不代表真实房态。最早可订今日之后第 3 天，周二为主人休息日。</p>
+      </div>
+      <aside class="book__panel">
+        <h3 class="book__h">房型</h3>
+        <div class="roompick" data-book-focus="room" data-list="roompick"></div>
+        <div class="book__row" data-book-focus="guest">
+          <h3 class="book__h">人数</h3>
+          <div class="stepper"><button type="button" data-step="-1" aria-label="减少一位">−</button><b data-sum="guests">2 位</b><button type="button" data-step="1" aria-label="增加一位">+</button></div>
+        </div>
+        <h3 class="book__h">加一项</h3>
+        <label class="check"><input type="checkbox" data-addon="dinner" checked><span></span>山食晚餐<i>¥288 / 位 / 晚</i></label>
+        <label class="check"><input type="checkbox" data-addon="pickup"><span></span>小镇接送<i>¥120 / 次</i></label>
+        <dl class="quote" data-quote></dl>
+        <button type="button" class="btn btn--primary btn--wide" data-reserve>预约入住<em>演示</em></button>
+        <p class="note">演示预约只在本页面内完成，不会发送到任何服务器，也不会产生真实预订。</p>
+      </aside>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer" data-footer>
+  <div class="wrap footer__grid">
+    <div class="footer__brand">
+      <svg class="brand__mark brand__mark--lg" aria-hidden="true"><use href="#logo-mark"/></svg>
+      <b>山谷留宿</b><i>VALLEY STAY</i>
+      <p>把时间交还给山林</p>
+    </div>
+    <dl class="footer__col">
+      <dt>找到我们</dt>
+      <dd><svg class="ic"><use href="#i-pin"/></svg><span>云岭山脉 · 雾起谷 7 号</span><em class="tag tag--demo">虚构地址</em></dd>
+      <dd><svg class="ic"><use href="#i-clock"/></svg><span>入住 15:00 – 21:00 · 退房 11:00</span></dd>
+      <dd>山路在雨雪天可能封闭，出发前请先看天气。</dd>
+    </dl>
+    <dl class="footer__col">
+      <dt>页面</dt>
+      <dd><a href="#rooms">房型</a><a href="#onsen">温泉</a><a href="#dining">餐食</a></dd>
+      <dd><a href="#spaces">公共空间</a><a href="#routes">周边路线</a><a href="#rules">入住须知</a></dd>
+      <dd><a href="#book">预约入住（演示）</a></dd>
+    </dl>
+    <div class="footer__note">
+      <p><b>关于本站</b>山谷留宿是一家虚构的民宿。品牌故事、地址、价格、可订日期、路线与住客评价均为演示内容，不对应任何真实商家。</p>
+      <p>摄影素材来自 Unsplash（Unsplash License），仅作氛围示意，并非民宿实景；手绘场景、地图与 Logo 为原创。字体：站酷小薇、Noto Serif SC、Marcellus、Spline Sans Mono（SIL OFL）。</p>
+    </div>
+  </div>
+  <div class="wrap footer__legal"><span>© 2026 山谷留宿 · 演示站点</span><span>Designed &amp; drawn in the valley</span></div>
+</footer>
+
+<nav class="sheet" id="menuSheet" hidden aria-label="菜单">
+  <a href="#rooms">房型</a><a href="#onsen">温泉</a><a href="#dining">餐食</a><a href="#spaces">公共空间</a><a href="#routes">周边路线</a><a href="#rules">入住须知</a><a href="#book" class="sheet__cta">预约入住（演示）</a>
+</nav>
+
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__card" id="modalCard"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><p class="noscript">本页的天气切换、日期选择与预约演示需要 JavaScript。房型、路线与规则的内容在 data.js 中。</p></noscript>
+
+<script src="assets/js/data.js"></script>
+<script src="assets/js/scene.js"></script>
+<script src="assets/js/atmosphere.js"></script>
+<script src="assets/js/booking.js"></script>
+<script src="assets/js/routes.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
