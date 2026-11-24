@@ -82,12 +82,10 @@ if (run('weather')) {
   }
   await p.close();
 }
-const MOMENT = ['.moment', '.moment']; // 入夜过场不是 section，单独截
 if (run('sections')) {
   const p = await open({ width: 1440, height: 900 });
   await sweep(p);
   for (const id of SECTIONS) { await at(p, '#' + id); await shot(p, `section-${id}`); console.log(id.padEnd(9), JSON.stringify(await state(p))); }
-  await at(p, '.moment', -60); await shot(p, 'section-moment'); console.log('moment  ', JSON.stringify(await state(p)));
   await instant(p, Math.round(900 * .55)); await p.waitForTimeout(1500); await shot(p, 'section-hero-leaving'); console.log('hero½   ', JSON.stringify(await state(p)));
   await at(p, '#rooms', 560); await p.waitForTimeout(600); await shot(p, 'section-rooms-2');
   await p.close();
@@ -96,7 +94,6 @@ if (run('mobile')) {
   const p = await open({ width: 390, height: 844 }, { mobile: true, dpr: 2 });
   await sweep(p);
   for (const id of SECTIONS) { await at(p, '#' + id); await shot(p, `mobile-${id}`); }
-  await at(p, '.moment', -60); await shot(p, 'mobile-moment');
   await at(p, '#rooms', 620); await shot(p, 'mobile-rooms-2');
   await instant(p, 0); await p.click('#menuBtn'); await p.waitForTimeout(700); await shot(p, 'mobile-menu'); await p.keyboard.press('Escape');
   await p.click('#clockBtn'); await p.waitForTimeout(500); await shot(p, 'mobile-clock-pop');

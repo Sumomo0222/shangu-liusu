@@ -10,7 +10,6 @@ window.SG = window.SG || {};
   const full = pre => { const o = {}; ['sunny', 'rainy', 'snowy'].forEach(w => { o[w] = {}; KEYS.forEach(t => { o[w][t] = pre + w + '-' + t; }); }); return o; };
   SG.scenes = {
     hero: { sizes: [1200, 1600, 2200], tab: full('hero-') },
-    mid: { sizes: [1200, 2000], tab: full('mid-') },
     win: { sizes: [640], tab: {
       sunny: { dawn: 'win-dawn', day: 'win-day', dusk: 'win-dusk', night: 'win-night' },
       rainy: { dawn: 'win-rain-dawn', day: 'win-rain-day', night: 'win-rain-night' },
@@ -100,18 +99,6 @@ window.SG = window.SG || {};
     'win-snow-dawn': ['Maarten Zuidhoorn', '窗帘外是雪', 'https://unsplash.com/photos/a-living-room-filled-with-furniture-and-a-window-U6Vig7xxbuA'],
     'win-snow-day': ['Ozgu Ozden', '窗外挂雪的树枝', 'https://unsplash.com/photos/white-and-black-tree-covered-with-snow-DQEZzyCSNaI'],
     'win-snow-dusk': ['Mike Petrucci', '结霜的窗与雪林', 'https://unsplash.com/photos/brown-wooden-pull-wagon-near-trees-covered-by-snow-yqXTfgU8OB4'],
-    'mid-sunny-dawn': ['Daniel Hajdacki', '晨光与雾', 'https://unsplash.com/photos/a-foggy-field-with-a-house-in-the-distance-Jib69zYQFSo'],
-    'mid-sunny-day': ['Mike Petrucci', '绿谷里的原木小屋', 'https://unsplash.com/photos/brown-wooden-house-near-mountains-at-daytime-18joWFjUhKw'],
-    'mid-sunny-dusk': ['Barnabas Davoti', '湖面映着亮灯的木屋', 'https://unsplash.com/photos/log-cabin-with-grass-roof-by-a-lake-EONSYN6QF34'],
-    'mid-sunny-night': ['Andrew Ridley', '夜里亮着一扇窗的木屋', 'https://unsplash.com/photos/grey-wooden-shack-V4wQMKnMyVU'],
-    'mid-rainy-dawn': ['Levi Meir Clancy', '雾笼住的田野', 'https://unsplash.com/photos/a-foggy-field-with-a-farm-in-the-distance-hKBlssHNqgk'],
-    'mid-rainy-day': ['Peter Secan', '蓝色雾气里的山谷', 'https://unsplash.com/photos/aerial-photo-of-mountains-covered-with-mist-QuZmcJ-n52E'],
-    'mid-rainy-dusk': ['Valery Tenevoy', '暮色里亮着窗的木屋', 'https://unsplash.com/photos/brown-wooden-house-near-trees-during-night-time-yZSH2rfS018'],
-    'mid-rainy-night': ['Michael Eufemia', '夜里亮着灯的屋子', 'https://unsplash.com/photos/stone-building-with-glowing-window-N5Gml7sNnHE'],
-    'mid-snowy-dawn': ['Fabian Mardi', '雪原尽头的小屋', 'https://unsplash.com/photos/snow-covered-tree-lot-during-daytime-kVKz9qnJC-k'],
-    'mid-snowy-day': ['Justus Schupmann', '林间空地上的雪中小屋', 'https://unsplash.com/photos/small-wooden-cabin-in-a-snowy-forest-clearing-uMtRMIH2PNs'],
-    'mid-snowy-dusk': ['Juho Luomala', '蓝色暮光里的雪林与木屋', 'https://unsplash.com/photos/a-barn-in-the-middle-of-a-snowy-field-xdh-L1ftkto'],
-    'mid-snowy-night': ['Marco De Hevia', '雪夜里亮着灯的两间木屋', 'https://unsplash.com/photos/brown-wooden-house-on-snow-covered-ground-during-night-time-pHot3McnBus'],
   };
 
   SG.data = {
@@ -131,7 +118,6 @@ window.SG = window.SG || {};
     },
     timeNotes: { dawn: '雾还没散', day: '阳光落在檐廊', dusk: '灯一盏盏亮起来', night: '只剩炉火和虫鸣' },
     timeNames: { dawn: '清晨', day: '白天', dusk: '黄昏', night: '夜晚' },
-    momentLines: { dawn: '天亮之前，雾先醒来。', day: '阳光翻过山脊，落在檐廊上。', dusk: '灯一盏一盏亮起来，山谷慢慢暗下去。', night: '天黑了。只剩炉火、虫鸣，和很近的星星。' },
     clockAt: { dawn: 6 * 60 + 12, day: 13 * 60 + 40, dusk: 18 * 60 + 50, night: 22 * 60 + 40 },
 
     rooms: [

@@ -18,9 +18,8 @@ window.SG = window.SG || {};
   };
 
   // 滚动时间线：每个章节的顶部走到屏幕中部时，对应到一天里的哪个时刻（0–4 为一天，4 之后是次日清晨）
-  // 第三项可选：以视口高度计的偏移。入夜过场的顶和底给同一个相位，整段画面都停在深夜，不会一边看一边淡到天亮
   const TIMELINE = [['#top', 0], ['#story', .62], ['#rooms', 1.02], ['#onsen', 1.44], ['#dining', 1.86], ['#spaces', 2.6],
-    ['.moment', 3.0], ['.moment', 3.0, .9], ['#routes', 4.06], ['#reviews', 4.16], ['#rules', 4.24], ['#book', 4.3], ['[data-footer]', 4.4]];
+    ['#routes', 4.02], ['#reviews', 4.12], ['#rules', 4.2], ['#book', 4.26], ['[data-footer]', 4.36]];
 
   // ---------- 颜色 ----------
   const labCache = new Map();
@@ -96,7 +95,7 @@ window.SG = window.SG || {};
     // 首屏和窗景立刻取图；谷汤、入夜过场在页面很下面，等滚到附近再取，免得一打开就下载
     if (!sc.active) {
       if (window.IntersectionObserver) {
-        const o = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { sc.active = true; if (sc.kind === 'mid') midNear = true; wake(); o.disconnect(); } }, { rootMargin: '100% 0px' });
+        const o = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { sc.active = true; wake(); o.disconnect(); } }, { rootMargin: '100% 0px' });
         o.observe(el);
       } else sc.active = true;
     }
@@ -106,7 +105,6 @@ window.SG = window.SG || {};
   const conn = navigator.connection || {};
   const slow = !!(conn.saveData || /^(slow-2g|2g|3g)$/.test(conn.effectiveType || ''));
   const NEAR = ['hero', 'win', 'onsen'];
-  let midNear = false;   // 入夜过场离首屏很远，滚到了才算"附近"
   function warm(weather, kinds) { // 把这种天气在各时刻的照片都先建好图层，浏览器就会去下载
     if (reduce || slow) return;
     scenes.forEach(sc => { if (kinds && kinds.indexOf(sc.kind) < 0) return; layer(sc, weather, 'all') || KEYS.forEach(t => layer(sc, weather, t)); });
@@ -171,7 +169,6 @@ window.SG = window.SG || {};
     text('[data-day]', next ? '次日 ' : '');
     text('[data-time-note]', D.timeNotes[key]);
     text('[data-time-name]', D.timeNames[key]);
-    text('[data-moment-line]', D.momentLines[key]);
     const c = SG.credits[pick('hero', st.to, key)];
     text('[data-credit]', c ? c[0] : '');
     document.querySelectorAll('[data-credit-link]').forEach(n => { const h = c ? c[2] : ''; if (n.getAttribute('href') !== h) n.setAttribute('href', h || '#'); });
@@ -276,7 +273,7 @@ window.SG = window.SG || {};
     st.from = st.mix >= 1 ? st.to : st.from; st.to = w; st.mix = reduce ? 1 : 0;
     st.dirty = true;
     st.subs.forEach(fn => fn(st.to, st.mode === 'auto' ? 'auto' : st.fixed));
-    setTimeout(() => warm(w, midNear ? null : NEAR), 2200);
+    setTimeout(() => warm(w, NEAR), 2200);
   }
   function setTime(mode) {
     if (mode !== 'auto' && KEYS.indexOf(mode) < 0) return;
@@ -298,11 +295,6 @@ window.SG = window.SG || {};
     addEventListener('resize', () => { resizeFx(); measure(); }, { passive: true });
     addEventListener('scroll', () => { st.dirty = true; }, { passive: true });
     addEventListener('load', () => { measure(); setTimeout(() => warm(st.to, NEAR), 900); }, { once: true });
-    if (window.IntersectionObserver && !reduce && !slow) {   // 快滚到入夜过场时，把它其余时刻的照片也备好
-      const near = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { warm(st.to, ['mid']); near.disconnect(); } }, { rootMargin: '60% 0px' });
-      const m = document.querySelector('[data-scene="mid"]');
-      if (m) near.observe(m);
-    }
     // 图片懒加载、字体替换都会让后面的章节挪位置：页面总高度一变就重新量一遍
     if (window.ResizeObserver) new ResizeObserver(() => measure()).observe(document.body);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
