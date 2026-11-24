@@ -5,8 +5,7 @@
     python3 tools/build-fonts.py <字体源文件目录>
 
 源文件（都不入库，体积太大）需要事先下载，均为 SIL OFL 1.1 许可：
-    ZCOOLXiaoWei-Regular.ttf   https://github.com/google/fonts/raw/main/ofl/zcoolxiaowei/ZCOOLXiaoWei-Regular.ttf
-    NotoSerifSC-Regular.otf    https://github.com/notofonts/noto-cjk/raw/main/Serif/SubsetOTF/SC/NotoSerifSC-Regular.otf
+    NotoSerifSC-Light.otf      https://github.com/notofonts/noto-cjk/raw/main/Serif/SubsetOTF/SC/NotoSerifSC-Light.otf
     Marcellus-Regular.ttf      https://github.com/google/fonts/raw/main/ofl/marcellus/Marcellus-Regular.ttf
     SplineSansMono[wght].ttf   https://github.com/google/fonts/raw/main/ofl/splinesansmono/SplineSansMono%5Bwght%5D.ttf
 依赖：pip install fonttools brotli
@@ -33,7 +32,12 @@ def harvest():
     chars = set(EXTRA)
     files = [ROOT / "index.html", *sorted((ROOT / "assets" / "js").glob("*.js")), *sorted((ROOT / "assets" / "css").glob("*.css"))]
     for f in files:
-        chars |= {c for c in f.read_text(encoding="utf-8") if ord(c) > 0x7E}
+        text = f.read_text(encoding="utf-8")
+        if f.name == "data.js":  # 图片署名表里的中文说明只用在不显示的 alt 属性里，不用裁进字体
+            a, b = text.find("SG.credits = {"), text.find("\n  };", text.find("SG.credits = {"))
+            if a > 0 and b > a:
+                text = text[:a] + text[b:]
+        chars |= {c for c in text if ord(c) > 0x7E}
     return "".join(sorted(chars)), [f.relative_to(ROOT) for f in files]
 
 
@@ -78,7 +82,7 @@ def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__)
     src = Path(sys.argv[1]).expanduser()
-    for f in ["ZCOOLXiaoWei-Regular.ttf", "NotoSerifSC-Regular.otf", "Marcellus-Regular.ttf", "SplineSansMono[wght].ttf"]:
+    for f in ["NotoSerifSC-Light.otf", "Marcellus-Regular.ttf", "SplineSansMono[wght].ttf"]:
         if not (src / f).exists():
             sys.exit(f"缺少源文件：{src / f}\n\n{__doc__}")
     OUT.mkdir(parents=True, exist_ok=True)
@@ -86,20 +90,15 @@ def main():
     print(f"从 {len(files)} 个文件收集到 {len(text)} 个字符（其中汉字 {sum(1 for c in text if 0x4E00 <= ord(c) <= 0x9FFF)} 个）")
     print("生成子集：")
     css = ["/* 由 tools/build-fonts.py 生成，请勿手改。来源与许可见同目录 LICENSE.md。 */\n"]
-    # 正文只带常规字重：页面里的 500 字重会落到它上面，更粗的字号由浏览器合成，省下三分之一的字体体积
-    miss_x, r = build(src / "ZCOOLXiaoWei-Regular.ttf", "xiaowei", text, "xiaowei.woff2", "400", "Xiaowei"); css.append(r)
-    miss_a, r = build(src / "NotoSerifSC-Regular.otf", "noto", text, "noto-serif-400.woff2", "400", "Noto Serif SC"); css.append(r)
-    latin = "".join(chr(c) for c in range(0x20, 0x250)) + "−…“”‘’·←→↑↓"
+    # 中文只带一款：宋体细体，只用于标题与引文；正文用系统黑体，不再下载中文字体
+    miss_a, r = build(src / "NotoSerifSC-Light.otf", "noto", text, "noto-serif-300.woff2", "300", "Noto Serif SC"); css.append(r)
+    latin = "".join(chr(c) for c in range(0x20, 0x250)) + "−…“”‘’·←→↑↓–—"
     # Marcellus 声明了保留字体名称，子集必须改名
     _, r = build(src / "Marcellus-Regular.ttf", "marcellus", latin, "marcellus.woff2", "400", "Marcellus Valley", latin_only=True, new_name="Marcellus Valley"); css.append(r)
     _, r = build(src / "SplineSansMono[wght].ttf", "spline", latin, "spline-mono.woff2", "400 600", "Spline Sans Mono", wght=420, latin_only=True); css.append(r)
     (OUT / "fonts.css").write_text("".join(css), encoding="utf-8")
-    # 站酷小薇缺的字只要 Noto Serif SC 有，就会顺着字体回退链补上；两边都没有的才会落到系统字体
     if miss_a:
         print("注意：Noto Serif SC 没有这些字，将回退到系统字体：", " ".join(miss_a))
-    both = [c for c in miss_x if c in miss_a]
-    if both:
-        print("注意：两款中文字体都没有的字：", " ".join(both))
     total = sum(p.stat().st_size for p in OUT.glob("*.woff2"))
     print(f"fonts.css 已写入，字体合计 {total / 1024:.0f} KB")
 

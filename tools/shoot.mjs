@@ -45,7 +45,6 @@ async function open(viewport, opts = {}) {
   await page.waitForTimeout(900);
   return page;
 }
-const shot = (page, name) => page.screenshot({ path: join(OUT, name + '.png') });
 const instant = (page, y) => page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), y);
 const at = async (page, sel, offset = 0) => {
   await page.evaluate(([s, o]) => { const n = document.querySelector(s); window.scrollTo({ top: n.getBoundingClientRect().top + scrollY - 76 + o, behavior: 'instant' }); }, [sel, offset]);
@@ -55,10 +54,17 @@ async function sweep(page) { // 逐屏滚一遍，触发所有进场动画
   const h = await page.evaluate(() => document.documentElement.scrollHeight), vh = page.viewportSize().height;
   for (let y = 0; y < h; y += Math.round(vh * .7)) { await instant(page, y); await page.waitForTimeout(220); }
 }
-// 从固定在顶栏的控件切换，页面不会被滚回顶部
-const weather = async (page, w) => { await page.click(`.topbar [data-weather-btn="${w}"]`); await page.waitForTimeout(2100); };
+// 在首屏里用首屏自带的切换器，滚过首屏后用顶栏上那一组；两者都不会让页面跳动
+const weather = async (page, w) => {
+  const inHero = await page.evaluate(() => scrollY < innerHeight - 96);
+  await page.click(`${inHero ? '.wx' : '.topbar'} [data-weather-btn="${w}"]`);
+  await page.waitForTimeout(2600);
+};
 const time = async (page, t) => { await page.click('#clockBtn'); await page.waitForTimeout(250); await page.click(`#timePop [data-time-btn="${t}"]`); await page.keyboard.press('Escape'); await page.waitForTimeout(1600); };
-const state = page => page.evaluate(() => ({ 天气: document.documentElement.dataset.weather, 时刻: document.documentElement.dataset.time, 时钟: document.querySelector('.atmo [data-clock]').textContent }));
+const state = page => page.evaluate(() => ({ 天气: document.documentElement.dataset.weather, 时刻: document.documentElement.dataset.time, 时钟: document.querySelector('.hero__clock [data-clock]').textContent }));
+// 设了 SG_DEBUG=1 时，每截一屏前多打印一行布局诊断（横向滚动、视觉视口、时间线相位）
+const diag = page => page.evaluate(() => { const r = n => { const b = n.getBoundingClientRect(); return Math.round(b.left) + '..' + Math.round(b.right); }; return `scrollX ${scrollX} vv ${visualViewport.width}x${visualViewport.height}@${visualViewport.offsetLeft},${visualViewport.offsetTop} s${visualViewport.scale} docSW ${document.documentElement.scrollWidth} inner ${innerWidth}x${innerHeight} phase ${SG.atmo.phase.toFixed(2)} mode ${SG.atmo.mode}` + (document.querySelector('.onsen__inner') ? ' onsenInner ' + r(document.querySelector('.onsen__inner')) : ''); });
+const shot = (page, name) => (process.env.SG_DEBUG ? diag(page).then(d => console.log('  [' + name + '] ' + d)) : Promise.resolve()).then(() => page.screenshot({ path: join(OUT, name + '.png'), timeout: 90000 }));
 const SECTIONS = ['story', 'rooms', 'onsen', 'dining', 'spaces', 'routes', 'reviews', 'rules', 'book'];
 
 if (run('hero')) {
@@ -76,35 +82,47 @@ if (run('weather')) {
   }
   await p.close();
 }
+const MOMENT = ['.moment', '.moment']; // 入夜过场不是 section，单独截
 if (run('sections')) {
   const p = await open({ width: 1440, height: 900 });
   await sweep(p);
   for (const id of SECTIONS) { await at(p, '#' + id); await shot(p, `section-${id}`); console.log(id.padEnd(9), JSON.stringify(await state(p))); }
+  await at(p, '.moment', -60); await shot(p, 'section-moment'); console.log('moment  ', JSON.stringify(await state(p)));
+  await instant(p, Math.round(900 * .55)); await p.waitForTimeout(1500); await shot(p, 'section-hero-leaving'); console.log('hero½   ', JSON.stringify(await state(p)));
+  await at(p, '#rooms', 560); await p.waitForTimeout(600); await shot(p, 'section-rooms-2');
   await p.close();
 }
 if (run('mobile')) {
   const p = await open({ width: 390, height: 844 }, { mobile: true, dpr: 2 });
   await sweep(p);
   for (const id of SECTIONS) { await at(p, '#' + id); await shot(p, `mobile-${id}`); }
+  await at(p, '.moment', -60); await shot(p, 'mobile-moment');
+  await at(p, '#rooms', 620); await shot(p, 'mobile-rooms-2');
+  await instant(p, 0); await p.click('#menuBtn'); await p.waitForTimeout(700); await shot(p, 'mobile-menu'); await p.keyboard.press('Escape');
+  await p.click('#clockBtn'); await p.waitForTimeout(500); await shot(p, 'mobile-clock-pop');
   await p.close();
 }
 if (run('interact')) {
   const p = await open({ width: 1440, height: 900 });
   await sweep(p);
-  await at(p, '#rooms', 430); await p.hover('.room[data-room="wuqi"]'); await p.waitForTimeout(900); await shot(p, 'interact-room-hover');
-  await p.click('.room[data-room="wuqi"] [data-preview]'); await p.waitForTimeout(900); await shot(p, 'interact-room-preview'); await p.keyboard.press('Escape');
+  await at(p, '#rooms', 560); await p.hover('.room:nth-child(2) .room__media'); await p.waitForTimeout(1100); await shot(p, 'interact-room-hover');
+  await p.click('.room:nth-child(2) [data-preview]'); await p.waitForTimeout(900); await shot(p, 'interact-room-preview'); await p.keyboard.press('Escape');
+  await instant(p, 0); await p.click('#clockBtn'); await p.waitForTimeout(500); await shot(p, 'interact-clock-pop'); await p.keyboard.press('Escape');
+  await at(p, '#spaces'); await p.click('[data-space="engawa"]'); await p.waitForTimeout(900); await shot(p, 'interact-space');
   await at(p, '#routes', 470); await p.hover('.route[data-route-item="ridge"]'); await p.waitForTimeout(700); await shot(p, 'interact-route-focus');
   await p.click('.route[data-route-item="ridge"] [data-route]'); await p.waitForTimeout(1000); await shot(p, 'interact-route-viewer'); await p.keyboard.press('Escape');
   await at(p, '#book'); await p.click('[data-reserve]'); await p.waitForTimeout(800); await shot(p, 'interact-reserve');
   await p.click('.reserve form .check'); await p.click('.reserve form button[type="submit"]'); await p.waitForTimeout(1000); await shot(p, 'interact-reserve-done'); await p.keyboard.press('Escape');
-  await weather(p, 'snowy'); await time(p, 'night'); await at(p, '#onsen'); await shot(p, 'interact-onsen-snow-night');
+  await weather(p, 'snowy'); await time(p, 'night'); await at(p, '#onsen'); await shot(p, 'interact-onsen-snowy');
+  await weather(p, 'rainy'); await time(p, 'day'); await shot(p, 'interact-onsen-rainy');
+  await at(p, '[data-footer]'); await p.click('.credits summary'); await p.waitForTimeout(500); await shot(p, 'interact-footer');
   await p.close();
 }
 if (run('fit')) {
   // 首屏的预约条要完整落在首屏内，页面不能有横向滚动
   for (const [w, h] of [[320, 568], [360, 640], [360, 780], [390, 844], [414, 896], [667, 375], [768, 1024], [844, 390], [1024, 768], [1280, 720], [1440, 900], [1920, 1080]]) {
     const p = await open({ width: w, height: h }, { mobile: w < 900 });
-    const r = await p.evaluate(() => { const b = document.querySelector('.bookbar').getBoundingClientRect(); return { vh: innerHeight, bar: Math.round(b.bottom), sw: document.documentElement.scrollWidth }; });
+    const r = await p.evaluate(() => { const b = document.querySelector('.bookbar').getBoundingClientRect(), d = document.querySelector('.hero__demo').getBoundingClientRect(); return { vh: innerHeight, bar: Math.round(Math.max(b.bottom, d.bottom)), sw: document.documentElement.scrollWidth }; });
     const ok = r.bar <= r.vh && r.sw <= w;
     if (!ok) problems.push(`LAYOUT ${w}x${h}: 预约条底 ${r.bar}/${r.vh}, scrollWidth ${r.sw}`);
     console.log(`${String(w).padStart(4)}×${h}`.padEnd(11), ok ? '首屏完整，无横向溢出' : `预约条超出 ${r.bar - r.vh}px，scrollWidth ${r.sw}`);

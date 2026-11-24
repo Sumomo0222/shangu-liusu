@@ -1,10 +1,10 @@
-/* 山谷留宿 · 周边路线：等高线手绘地图、路线列表与路线查看器
+/* 山谷留宿 · 周边路线：发丝线等高线地图、路线列表与路线查看器
  * 地图与路线都是虚构的示意，只表达相对位置和氛围。 */
 window.SG = window.SG || {};
 (function () {
   'use strict';
   const D = SG.data, NS = 'http://www.w3.org/2000/svg';
-  const COLORS = { mist: '#6f8378', creek: '#5f7f94', ridge: '#b07a55', villages: '#8a6a7c' };
+  const COLORS = { mist: '#5c7366', creek: '#517389', ridge: '#a5714c', villages: '#82637a' };
   const LODGE = [404, 424];
   const f = n => Math.round(n * 10) / 10;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -31,7 +31,6 @@ window.SG = window.SG || {};
   // ---------- 地图 ----------
   function buildMap(svg) {
     const W = 760, H = 620;
-    el('rect', { x: 0, y: 0, width: W, height: H, class: 'map-bg' }, svg);
     // 几座山头的等高线；数值为 中心 x、y、外圈半径、圈数、峰顶海拔、相位种子
     // 最后一个数是标高文字的纵向偏移，用来避开附近的途经点标签
     const PEAKS = [[250, 210, 200, 6, 1780, 1, 0], [600, 190, 150, 5, 1640, 2, 0], [650, 510, 125, 4, 1480, 3, -44], [110, 540, 110, 3, 1420, 4, 0]];
@@ -62,7 +61,7 @@ window.SG = window.SG || {};
     const lodge = el('g', { class: 'map-lodge-g' }, svg);
     el('circle', { cx: LODGE[0], cy: LODGE[1], r: 15, fill: '#b0492f', opacity: .22, class: 'map-pulse' }, lodge);
     el('circle', { cx: LODGE[0], cy: LODGE[1], r: 7, class: 'map-lodge' }, lodge);
-    el('circle', { cx: LODGE[0], cy: LODGE[1], r: 2.2, fill: '#fbf6ec' }, lodge);
+    el('circle', { cx: LODGE[0], cy: LODGE[1], r: 2.2, fill: '#faf8f3' }, lodge);
     el('text', { x: LODGE[0], y: LODGE[1] + 26, 'text-anchor': 'middle', class: 'map-label map-label--lodge' }, svg).textContent = '山谷留宿 · 1,280 m';
     // 途经点
     const wg = el('g', {}, svg);

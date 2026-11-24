@@ -1,21 +1,24 @@
 # 字体来源与许可
 
 `assets/fonts/` 里的 woff2 都是从下列开源字体裁出的**子集**（只包含本页实际用到的字），由 `tools/build-fonts.py` 生成。
-四款字体均以 **SIL Open Font License 1.1** 发布：可以自由使用、修改、再分发（包括商用），也可以与软件一同打包；
+三款字体均以 **SIL Open Font License 1.1** 发布：可以自由使用、修改、再分发（包括商用），也可以与软件一同打包；
 字体本身不能单独拿来售卖，衍生字体（包括这里的子集）不能使用保留字体名称（Reserved Font Name）。
 
 | 文件 | 字体 | 版权 | 来源 |
 | --- | --- | --- | --- |
-| `xiaowei.woff2` | ZCOOL XiaoWei（站酷小薇） | Copyright 2018 The ZCOOL XiaoWei Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/zcoolxiaowei) |
-| `noto-serif-400.woff2` | Noto Serif SC（思源宋体 简体） | © 2017–2024 Adobe | [notofonts/noto-cjk](https://github.com/notofonts/noto-cjk/tree/main/Serif/SubsetOTF/SC) |
+| `noto-serif-300.woff2` | Noto Serif SC（思源宋体 简体，Light 字重；只用于标题与引文，正文用系统黑体） | Copyright 2012 Google Inc. All Rights Reserved. | [notofonts/noto-cjk](https://github.com/notofonts/noto-cjk/tree/main/Serif/SubsetOTF/SC) |
 | `marcellus.woff2` | Marcellus（子集内部改名为 Marcellus Valley，见下） | Copyright (c) 2012 Brian J. Bonislawsky DBA Astigmatic (AOETI), with Reserved Font Name "Marcellus" | [google/fonts](https://github.com/google/fonts/tree/main/ofl/marcellus) |
 | `spline-mono.woff2` | Spline Sans Mono（定在 wght 420） | Copyright 2022 The Spline Sans Mono Project Authors | [google/fonts](https://github.com/google/fonts/tree/main/ofl/splinesansmono) |
 
-裁子集在 OFL 里算作"修改版"，所以：四款子集同样按 OFL 1.1 提供，原字体的版权声明都保留在字体文件里；Marcellus 声明了保留字体名称，它的子集因此改了内部名称（Marcellus Valley）。另外三款字体没有声明保留字体名称，子集沿用原名。若要把这些子集用于别的项目，请一并保留本说明。
+裁子集在 OFL 里算作"修改版"，所以：三款子集同样按 OFL 1.1 提供，原字体的版权声明都保留在字体文件里；Marcellus 声明了保留字体名称，它的子集因此改了内部名称（Marcellus Valley）。另外两款字体没有声明保留字体名称，子集沿用原名。若要把这些子集用于别的项目，请一并保留本说明。
 
 ---
 
-Copyright 2018 The ZCOOL XiaoWei Project Authors (https://github.com/googlefonts/zcool-xiaowei/)
+Noto Serif SC: Copyright 2012 Google Inc. All Rights Reserved.
+
+Marcellus: Copyright (c) 2012, Brian J. Bonislawsky DBA Astigmatic (AOETI), with Reserved Font Names "Marcellus"
+
+Spline Sans Mono: Copyright 2022 The Spline Sans Mono Project Authors (https://github.com/SorkinType/SplineSansMono)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

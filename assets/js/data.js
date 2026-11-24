@@ -4,87 +4,114 @@ window.SG = window.SG || {};
 (function () {
   'use strict';
 
-  // 调色板：每种天气 × 四个时刻（dawn / day / dusk / night）
-  // 颜色通道以 # 开头，其余为数值；数值里的 sunX / sunY 是 SVG 用户坐标。
-  const P = {
+  // 照片矩阵：首屏（hero）与"入夜"过场（mid）按 天气 × 时刻 取图；窗景小图（win）按时刻取图，
+  // 雨天 / 雪天有实景窗景就替换，缺的回退到同一天气的相邻时刻，再回退到晴天；谷汤只按天气换图。
+  const KEYS = ['dawn', 'day', 'dusk', 'night'];
+  const full = pre => { const o = {}; ['sunny', 'rainy', 'snowy'].forEach(w => { o[w] = {}; KEYS.forEach(t => { o[w][t] = pre + w + '-' + t; }); }); return o; };
+  SG.scenes = {
+    hero: { sizes: [1200, 1600, 2200], tab: full('hero-') },
+    mid: { sizes: [1200, 2000], tab: full('mid-') },
+    win: { sizes: [640], tab: {
+      sunny: { dawn: 'win-dawn', day: 'win-day', dusk: 'win-dusk', night: 'win-night' },
+      rainy: { dawn: 'win-rain-dawn', day: 'win-rain-day', night: 'win-rain-night' },
+      snowy: { dawn: 'win-snow-dawn', day: 'win-snow-day', dusk: 'win-snow-dusk' }
+    } },
+    onsen: { sizes: [1200, 2000], tab: { sunny: { all: 'onsen-sunny' }, rainy: { all: 'onsen-rainy' }, snowy: { all: 'onsen-snowy' } } }
+  };
+
+  // 每种天气 × 时刻的"调色"：scrim 是首屏底部压暗、side 是文字所在的左侧压暗（都为了保证文字可读），
+  // veil / veilO 是色罩，mist / steam 是雾气与蒸汽的浓度。
+  const G = {
     sunny: {
-      dawn: { sky1: '#86abc7', sky2: '#e9cfb2', sky3: '#f7e4c6', sunCore: '#fff7e2', sunHalo: '#ffd59a', sunO: 1, sunX: 690, sunY: 505, moonO: 0, cloud: '#ffe9d0', cloudO: .6, rayO: .55, starO: 0,
-        r5: '#b7c8cf', r4: '#93aba9', r3: '#6e8b80', r2: '#48625a', r1: '#2b3d37', t5: '#a3b9bc', t4: '#7f9a98', t3: '#5a7a6e', t2: '#334d44', t1: '#1c2b27', fog: '#f0f1ea', fogO: .9,
-        cabin: '#5c4736', roof: '#392f29', trim: '#2f251f', lamp: '#ffd79a', lampO: .6, smokeO: .7,
-        steam: '#ffffff', steamO: .5, snow: '#f7f9fa', snowO: 0, rainO: 0, water1: '#dfe8e6', water2: '#9fb7b4',
-        curtain: '#efe2cc', curtainO: .62, heroInk: '#1c2824', scrimO: .08, birdO: .9, fireflyO: 0,
-        paper: '#f3ede3', photoSat: .92, photoBri: 1, photoCon: 1, tint: '#ffcf9a', tintO: 0, frameB: 1, sway: 1 },
-      day: { sky1: '#6ea2ce', sky2: '#a9cadc', sky3: '#e6eae2', sunCore: '#fffdf3', sunHalo: '#fff0c4', sunO: 1, sunX: 1010, sunY: 150, moonO: 0, cloud: '#ffffff', cloudO: .75, rayO: .18, starO: 0,
-        r5: '#b3c9d3', r4: '#8daba8', r3: '#648b7b', r2: '#406653', r1: '#273f35', t5: '#9fb7c0', t4: '#799990', t3: '#507567', t2: '#2b4a3b', t1: '#17291f', fog: '#f2f5ee', fogO: .45,
-        cabin: '#6a523f', roof: '#3d332c', trim: '#33281f', lamp: '#ffdca4', lampO: .18, smokeO: .35,
-        steam: '#ffffff', steamO: .32, snow: '#f7f9fa', snowO: 0, rainO: 0, water1: '#e3ecea', water2: '#9db9b6',
-        curtain: '#f3e8d4', curtainO: .6, heroInk: '#18261f', scrimO: 0, birdO: .8, fireflyO: 0,
-        paper: '#f4efe5', photoSat: .95, photoBri: 1, photoCon: 1, tint: '#ffd9a6', tintO: 0, frameB: 1.04, sway: .8 },
-      dusk: { sky1: '#4c6796', sky2: '#dc926c', sky3: '#f8c68c', sunCore: '#ffe4b4', sunHalo: '#ff9e5c', sunO: 1, sunX: 1290, sunY: 498, moonO: .1, cloud: '#ffb98a', cloudO: .7, rayO: .6, starO: .18,
-        r5: '#9b92ad', r4: '#776d89', r3: '#564f6a', r2: '#3a3450', r1: '#221e38', t5: '#877e9b', t4: '#655b78', t3: '#46405b', t2: '#2c2740', t1: '#15122a', fog: '#ecbca2', fogO: .75,
-        cabin: '#4c3a31', roof: '#2c2521', trim: '#241c18', lamp: '#ffbf6e', lampO: .96, smokeO: .6,
-        steam: '#ffd9c2', steamO: .5, snow: '#f6e7ea', snowO: 0, rainO: 0, water1: '#f0b68e', water2: '#7f7397',
-        curtain: '#eccdb0', curtainO: .66, heroInk: '#201c2c', scrimO: .3, birdO: .35, fireflyO: .25,
-        paper: '#f2e6d6', photoSat: 1, photoBri: .98, photoCon: 1.02, tint: '#ff9f66', tintO: .08, frameB: .86, sway: 1 },
-      night: { sky1: '#0a1324', sky2: '#16263e', sky3: '#2a405a', sunCore: '#ffe4b4', sunHalo: '#ff9e5c', sunO: 0, sunX: 1290, sunY: 900, moonO: 1, cloud: '#3f5878', cloudO: .5, rayO: 0, starO: 1,
-        r5: '#1c2b3e', r4: '#15212f', r3: '#0f1922', r2: '#0a1217', r1: '#060a0d', t5: '#16232f', t4: '#111a24', t3: '#0c141a', t2: '#080e12', t1: '#04070a', fog: '#2e4257', fogO: .6,
-        cabin: '#2a211d', roof: '#17120f', trim: '#120d0b', lamp: '#ffb257', lampO: 1, smokeO: .5,
-        steam: '#c9d9ea', steamO: .6, snow: '#dbe7f2', snowO: 0, rainO: 0, water1: '#243a52', water2: '#0d1620',
-        curtain: '#8a7a6a', curtainO: .7, heroInk: '#f1e9da', scrimO: .06, birdO: 0, fireflyO: 1,
-        paper: '#ebe6de', photoSat: .9, photoBri: .94, photoCon: 1, tint: '#3b4f78', tintO: .08, frameB: .62, sway: .9 }
+      dawn: { scrim: .74, side: .72, veil: '#1a2233', veilO: .1, mist: .5, steam: .4 },
+      day: { scrim: .6, side: .9, veil: '#141a24', veilO: 0, mist: .2, steam: .3 },
+      dusk: { scrim: .7, side: .66, veil: '#150e14', veilO: .1, mist: .28, steam: .45 },
+      night: { scrim: .78, side: .6, veil: '#070a14', veilO: .24, mist: .12, steam: .4 }
     },
     rainy: {
-      dawn: { sky1: '#6e8291', sky2: '#93a3ab', sky3: '#b5c0c1', sunCore: '#e8ebe7', sunHalo: '#cdd4d3', sunO: .22, sunX: 690, sunY: 505, moonO: 0, cloud: '#aab7bb', cloudO: .9, rayO: 0, starO: 0,
-        r5: '#9aa9ae', r4: '#7a8c91', r3: '#5e7378', r2: '#42575b', r1: '#29393c', t5: '#8b9ca1', t4: '#6b7f84', t3: '#51676b', t2: '#34494d', t1: '#1c292c', fog: '#c9d2d2', fogO: 1,
-        cabin: '#4e4036', roof: '#2f2926', trim: '#271f1b', lamp: '#ffd28f', lampO: .78, smokeO: .8,
-        steam: '#eef2f2', steamO: .78, snow: '#f7f9fa', snowO: 0, rainO: 1, water1: '#b9c5c6', water2: '#6d8184',
-        curtain: '#dcd8cd', curtainO: .7, heroInk: '#142226', scrimO: .1, birdO: .15, fireflyO: 0,
-        paper: '#efebe3', photoSat: .72, photoBri: .95, photoCon: .98, tint: '#5c7583', tintO: .16, frameB: .9, sway: 1.7 },
-      day: { sky1: '#7a8e9c', sky2: '#a2b1b8', sky3: '#c5cece', sunCore: '#eef0ec', sunHalo: '#d5dbda', sunO: .2, sunX: 1010, sunY: 150, moonO: 0, cloud: '#b8c2c5', cloudO: .95, rayO: 0, starO: 0,
-        r5: '#a0aeb3', r4: '#7f9196', r3: '#62777b', r2: '#465c60', r1: '#2c3d41', t5: '#91a1a6', t4: '#71868a', t3: '#576e72', t2: '#394f53', t1: '#1f2e31', fog: '#d3dbdb', fogO: .8,
-        cabin: '#56463b', roof: '#322b27', trim: '#291f1b', lamp: '#ffd9a0', lampO: .42, smokeO: .5,
-        steam: '#f2f5f5', steamO: .62, snow: '#f7f9fa', snowO: 0, rainO: 1, water1: '#c2cccd', water2: '#74898c',
-        curtain: '#e2ded3', curtainO: .68, heroInk: '#16232a', scrimO: .05, birdO: .3, fireflyO: 0,
-        paper: '#eeeae3', photoSat: .74, photoBri: .97, photoCon: .98, tint: '#5c7583', tintO: .14, frameB: .94, sway: 1.6 },
-      dusk: { sky1: '#53647a', sky2: '#8c8f99', sky3: '#b49b90', sunCore: '#f3c9a6', sunHalo: '#d99c7c', sunO: .3, sunX: 1290, sunY: 498, moonO: .1, cloud: '#a89aa0', cloudO: .9, rayO: 0, starO: .08,
-        r5: '#86899a', r4: '#696e80', r3: '#4f5768', r2: '#37404e', r1: '#212733', t5: '#797c8d', t4: '#5e6375', t3: '#474e5e', t2: '#2e3542', t1: '#171b24', fog: '#bab7be', fogO: .92,
-        cabin: '#43362e', roof: '#28221f', trim: '#221b17', lamp: '#ffc478', lampO: .96, smokeO: .7,
-        steam: '#f0d7cc', steamO: .72, snow: '#f7f9fa', snowO: 0, rainO: 1, water1: '#b7968e', water2: '#4d4f63',
-        curtain: '#cfc3b7', curtainO: .72, heroInk: '#191b24', scrimO: .3, birdO: .1, fireflyO: .15,
-        paper: '#efe5d9', photoSat: .8, photoBri: .94, photoCon: .98, tint: '#4e5a7a', tintO: .14, frameB: .8, sway: 1.8 },
-      night: { sky1: '#0b121b', sky2: '#131d29', sky3: '#1e2b37', sunCore: '#f3c9a6', sunHalo: '#d99c7c', sunO: 0, sunX: 1290, sunY: 900, moonO: 1, cloud: '#2c3a48', cloudO: .7, rayO: 0, starO: .35,
-        r5: '#19242e', r4: '#131c24', r3: '#0e151b', r2: '#090f13', r1: '#05080b', t5: '#141e27', t4: '#10181f', t3: '#0c1216', t2: '#080d10', t1: '#04070a', fog: '#24313c', fogO: .92,
-        cabin: '#241d1a', roof: '#130f0d', trim: '#0f0b0a', lamp: '#ffae55', lampO: 1, smokeO: .55,
-        steam: '#b9c9d6', steamO: .75, snow: '#f7f9fa', snowO: 0, rainO: 1, water1: '#1c2c3a', water2: '#081016',
-        curtain: '#6f6a63', curtainO: .76, heroInk: '#edf0ee', scrimO: .06, birdO: 0, fireflyO: .5,
-        paper: '#e6e3dd', photoSat: .72, photoBri: .9, photoCon: .98, tint: '#2c3c5c', tintO: .12, frameB: .58, sway: 1.7 }
+      dawn: { scrim: .8, side: .78, veil: '#1d262e', veilO: .16, mist: .68, steam: .6 },
+      day: { scrim: .72, side: .82, veil: '#161d24', veilO: .16, mist: .58, steam: .55 },
+      dusk: { scrim: .78, side: .78, veil: '#12161d', veilO: .18, mist: .58, steam: .6 },
+      night: { scrim: .8, side: .68, veil: '#080b12', veilO: .26, mist: .34, steam: .6 }
     },
     snowy: {
-      dawn: { sky1: '#a6bacc', sky2: '#e3d2cb', sky3: '#f7e8dc', sunCore: '#fff4e4', sunHalo: '#ffd8b2', sunO: .8, sunX: 690, sunY: 505, moonO: 0, cloud: '#fbe9e0', cloudO: .7, rayO: .3, starO: 0,
-        r5: '#d8e0e7', r4: '#c5d2db', r3: '#aebec9', r2: '#97acb8', r1: '#e3eaee', t5: '#b9c8d3', t4: '#9fb2bf', t3: '#8098a7', t2: '#526a78', t1: '#22313a', fog: '#f4f6f7', fogO: .75,
-        cabin: '#4f3e33', roof: '#332b27', trim: '#2a211c', lamp: '#ffcf8a', lampO: .72, smokeO: .9,
-        steam: '#ffffff', steamO: .95, snow: '#f7f9fa', snowO: 1, rainO: 0, water1: '#dfe9ee', water2: '#9db6c2',
-        curtain: '#f0ebe4', curtainO: .66, heroInk: '#1f2b34', scrimO: .06, birdO: .3, fireflyO: 0,
-        paper: '#f3f1ee', photoSat: .8, photoBri: 1.04, photoCon: .98, tint: '#bcd0e2', tintO: .1, frameB: 1, sway: 1.5 },
-      day: { sky1: '#9cbad6', sky2: '#cddcea', sky3: '#eef2f4', sunCore: '#fffdf5', sunHalo: '#eaf2fb', sunO: .9, sunX: 1010, sunY: 150, moonO: 0, cloud: '#ffffff', cloudO: .8, rayO: .12, starO: 0,
-        r5: '#dee6ec', r4: '#cbd7e1', r3: '#b5c6d2', r2: '#9cb0bd', r1: '#e9eef1', t5: '#c2cfd9', t4: '#a8b9c6', t3: '#8ba2b1', t2: '#5b7381', t1: '#24343d', fog: '#f6f8f9', fogO: .5,
-        cabin: '#5a4639', roof: '#382f2a', trim: '#2e241e', lamp: '#ffdba6', lampO: .25, smokeO: .5,
-        steam: '#ffffff', steamO: .8, snow: '#f7f9fa', snowO: 1, rainO: 0, water1: '#e4edf1', water2: '#a3bcc8',
-        curtain: '#f3efe9', curtainO: .62, heroInk: '#1a2730', scrimO: 0, birdO: .5, fireflyO: 0,
-        paper: '#f4f2ef', photoSat: .82, photoBri: 1.05, photoCon: .98, tint: '#bcd0e2', tintO: .08, frameB: 1.04, sway: 1.3 },
-      dusk: { sky1: '#7b8db0', sky2: '#eabaa4', sky3: '#f8d8c2', sunCore: '#ffe8c8', sunHalo: '#ffb48c', sunO: .85, sunX: 1290, sunY: 498, moonO: .12, cloud: '#ffcdb8', cloudO: .75, rayO: .4, starO: .12,
-        r5: '#cbc6d7', r4: '#b4b1c7', r3: '#999bb1', r2: '#7f889f', r1: '#d5d9e3', t5: '#b1acbf', t4: '#9793ab', t3: '#7c7e95', t2: '#515a70', t1: '#1f2533', fog: '#f0d3cf', fogO: .7,
-        cabin: '#46372f', roof: '#2a2421', trim: '#231b17', lamp: '#ffbe72', lampO: .96, smokeO: .8,
-        steam: '#ffe2d2', steamO: .95, snow: '#f9e9ea', snowO: 1, rainO: 0, water1: '#f3c6b4', water2: '#7d829e',
-        curtain: '#ecd7cc', curtainO: .7, heroInk: '#221e2a', scrimO: .26, birdO: .2, fireflyO: .1,
-        paper: '#f2e8de', photoSat: .86, photoBri: 1.02, photoCon: .98, tint: '#d58aa8', tintO: .06, frameB: .86, sway: 1.5 },
-      night: { sky1: '#0e192b', sky2: '#1b2a44', sky3: '#31455f', sunCore: '#ffe8c8', sunHalo: '#ffb48c', sunO: 0, sunX: 1290, sunY: 900, moonO: 1, cloud: '#44587a', cloudO: .6, rayO: 0, starO: 1,
-        r5: '#27374b', r4: '#2c3d52', r3: '#34475c', r2: '#4a5f77', r1: '#a9bfd4', t5: '#1f2d3d', t4: '#192534', t3: '#121c27', t2: '#0c141c', t1: '#05090d', fog: '#4d6280', fogO: .65,
-        cabin: '#241d1a', roof: '#15110f', trim: '#100c0b', lamp: '#ffb45e', lampO: 1, smokeO: .6,
-        steam: '#dfe9f3', steamO: .95, snow: '#e3eef8', snowO: 1, rainO: 0, water1: '#2a405a', water2: '#0d1822',
-        curtain: '#8e8c8e', curtainO: .72, heroInk: '#f2ecdf', scrimO: .06, birdO: 0, fireflyO: 0,
-        paper: '#e9e6e1', photoSat: .78, photoBri: .95, photoCon: .98, tint: '#34486e', tintO: .1, frameB: .6, sway: 1.4 }
+      dawn: { scrim: .82, side: .86, veil: '#27303f', veilO: .1, mist: .46, steam: .55 },
+      day: { scrim: .84, side: .95, veil: '#1c2430', veilO: .12, mist: .38, steam: .5 },
+      dusk: { scrim: .76, side: .78, veil: '#141a2a', veilO: .14, mist: .4, steam: .6 },
+      night: { scrim: .78, side: .68, veil: '#080c18', veilO: .2, mist: .22, steam: .6 }
     }
+  };
+
+  // 图片署名：文件名 → [作者, 中文说明, 图片页]；全部来自 Unsplash（Unsplash License），只是氛围示意
+  SG.credits = {
+    'hero-sunny-dawn': ['Istvan Gyimesi', '清晨湖畔，雾中的木屋', 'https://unsplash.com/photos/brown-house-near-body-of-water-during-daytime-wfKCxFTQ7L0'],
+    'hero-sunny-day': ['Ruben Hanssen', '草坡上的原木小屋，远处是雾中的山脊', 'https://unsplash.com/photos/brown-wooden-house-on-green-grass-field-near-green-trees-and-mountains-during-daytime-D3GYSD-eHUw'],
+    'hero-sunny-dusk': ['Derek Sears', '暮色里亮着灯的木屋', 'https://unsplash.com/photos/lighted-brown-wooden-cabin-near-pine-tree-during-night-time-AZAF_lVud64'],
+    'hero-sunny-night': ['Jake Hinds', '银河下亮着灯的木屋', 'https://unsplash.com/photos/silhouette-of-house-near-trees-during-nighttime-43-QgSVp1tk'],
+    'hero-rainy-dawn': ['m c', '浓雾里的木屋', 'https://unsplash.com/photos/small-wooden-cabin-on-a-grassy-hill-in-fog-hCCIYRuteg8'],
+    'hero-rainy-day': ['Chris Jones', '阴天里整面玻璃的木屋', 'https://unsplash.com/photos/a-group-of-benches-sitting-on-top-of-a-lush-green-field-lMbHT44KRi4'],
+    'hero-rainy-dusk': ['Jacob Granneman', '雨雾中亮着窗的木屋', 'https://unsplash.com/photos/a-house-with-a-green-roof-surrounded-by-trees-oxm7rLpGwEk'],
+    'hero-rainy-night': ['Niko Saparilas', '雨夜里亮着灯的长屋', 'https://unsplash.com/photos/a-house-on-a-dock-surrounded-by-water-uzn2rV3D3_o'],
+    'hero-snowy-dawn': ['Yuhan Du', '晨光里的雪中小屋', 'https://unsplash.com/photos/a-cabin-in-the-middle-of-a-snowy-forest-aCH6-PTLZUs'],
+    'hero-snowy-day': ['Ahmet Yüksek', '深雪里的木屋与挂雪的杉树', 'https://unsplash.com/photos/a-small-wooden-cabin-in-a-snowy-forest-RLrcAlok7WQ'],
+    'hero-snowy-dusk': ['Sean C Davis', '蓝调时分亮着灯的雪中木屋', 'https://unsplash.com/photos/cozy-cabin-glowing-in-the-snowy-woods-at-night-EwwVAaxZ4DM'],
+    'hero-snowy-night': ['Dennis Haug', '雪松间亮着灯的木屋', 'https://unsplash.com/photos/a-house-in-the-middle-of-a-snow-covered-forest-QJ2nHy1YGFY'],
+    'win-dawn': ['Andrew Ridley', '卧室整面窗外的清晨山谷', 'https://unsplash.com/photos/brown-and-white-blanket-beside-with-framed-glass-window-9sTuZHhYyMw'],
+    'win-day': ['Clay Banks', '木屋客厅与望向树林的大窗', 'https://unsplash.com/photos/a-living-room-with-a-couch-and-a-fireplace-DNt5A4T0-Rs'],
+    'win-dusk': ['Michael McKay', '夕阳斜进来的窗边', 'https://unsplash.com/photos/sunlight-streams-into-a-camper-window-overlooking-a-lake-vVNYP1NgPDY'],
+    'win-night': ['Michal Balog', '夜里的卧室与窗', 'https://unsplash.com/photos/grey-bedspreads-inside-room-J0nae5nkmbw'],
+    'onsen-sunny': ['Barnabas Davoti', '山谷里的木质温泉桶，蒸汽升腾', 'https://unsplash.com/photos/a-wooden-deck-overlooking-a-forest-TZ06vlXk9W0'],
+    'onsen-rainy': ['Momo Kim', '雾气蒸腾的温泉池面', 'https://unsplash.com/photos/a-body-of-water-with-a-rock-in-the-middle-of-it-8FE4YIoycF0'],
+    'onsen-snowy': ['Greta Schölderle Möller', '面朝雪山的露天温泉', 'https://unsplash.com/photos/woman-swimming-on-river-2Zo36HIiAls'],
+    'onsen-indoor': ['Clay Banks', '带窗的室内汤屋与木质浴池', 'https://unsplash.com/photos/a-wooden-room-with-a-tiled-hot-tub-and-windows-xa2Q7-KkRjY'],
+    'room-jianshan': ['Clay Banks', '见山房：木饰面客房，阳光落在床上', 'https://unsplash.com/photos/cozy-bedroom-with-wood-paneled-walls-and-a-view-0v7DOW9cT_o'],
+    'detail-seat': ['Steve Adams', '窗边的木质坐台', 'https://unsplash.com/photos/a-wooden-bench-sitting-in-front-of-a-window-6pR1UB6ihsQ'],
+    'detail-window-dawn': ['Andrew Ridley', '整面落地窗与清晨的山谷', 'https://unsplash.com/photos/brown-and-white-blanket-beside-with-framed-glass-window-9sTuZHhYyMw'],
+    'room-tingxi': ['Clay Banks', '听溪房：斜顶木墙与拱窗', 'https://unsplash.com/photos/a-bedroom-with-two-beds-and-a-desk-rP0OTFdVaak'],
+    'detail-curtain': ['Pix Tresa', '木窗与纱帘', 'https://unsplash.com/photos/a-rustic-wooden-wall-with-a-window-and-white-curtains-7Iy7M3fn5-0'],
+    'detail-linen': ['Hans', '原木墙前的亚麻床品', 'https://unsplash.com/photos/a-bed-with-a-white-comforter-and-a-wooden-headboard-rp-szRaARvQ'],
+    'room-wuqi': ['Clay Banks', '雾起套房：整面玻璃转角的起居区', 'https://unsplash.com/photos/a-living-room-with-a-wood-burning-stove-in-it-kNFOoORtrys'],
+    'detail-tub': ['Rod Long', '临窗的深色浴缸', 'https://unsplash.com/photos/a-bath-tub-sitting-in-a-bathroom-next-to-a-window-iD1GObFLsOs'],
+    'detail-lounge': ['Nick Martin', '深色木起居室与整面窗', 'https://unsplash.com/photos/rustic-wooden-cabin-interior-with-furniture-1KxGA-jf2Os'],
+    'room-xingye': ['Clay Banks', '星野阁楼：斜顶下的卧室与大窗', 'https://unsplash.com/photos/a-living-room-with-a-fire-place-inside-of-it-f_6yPIgDxxs'],
+    'detail-skylight': ['Christopher Farrugia', '夜里亮着的屋顶天窗', 'https://unsplash.com/photos/bed-near-window-during-day-FqOMlLb5o7Y'],
+    'detail-loft': ['Clay Banks', '木结构夹层', 'https://unsplash.com/photos/a-view-of-a-living-room-and-dining-room-from-above-KOfl23hSkFM'],
+    'space-fireplace': ['Clay Banks', '壁炉厅：挑高的木屋客厅与悬空的柴炉', 'https://unsplash.com/photos/a-living-room-with-a-fire-place-inside-of-it-f_6yPIgDxxs'],
+    'space-table': ['Clay Banks', '木墙餐厅里的长桌', 'https://unsplash.com/photos/a-dining-room-with-wood-paneling-and-windows-DBJ0GcEM_Bg'],
+    'space-engawa': ['Andrew Swarga', '黄昏木廊上的摇椅', 'https://unsplash.com/photos/wooden-folding-chairs-on-cabin-deck-D2lnMKsNaAE'],
+    'space-library': ['Clay Banks', '书架与窗台：书墙之间的靠窗座位', 'https://unsplash.com/photos/library-interior-z_DkoUqgx6M'],
+    'space-irori': ['Hans', '火塘：串灯下的悬空柴炉与两把椅子', 'https://unsplash.com/photos/a-living-room-with-a-fire-place-and-a-chair-_k0Pyd1uMEc'],
+    'detail-fire': ['Scott Greer', '壁炉里的火焰', 'https://unsplash.com/photos/a-fire-burning-in-a-fireplace-in-a-dark-room-Ht_exjZdm24'],
+    'food-breakfast': ['Erick Palacio', '木桌上的早餐与茶', 'https://unsplash.com/photos/baked-pastries-on-brow-table-PkuYeKOGZYA'],
+    'trail-mist': ['Lacie Cueto', '雾中森林小路上的行人', 'https://unsplash.com/photos/woman-standing-on-focus-photography-8G0a4ya7WfM'],
+    'trail-creek': ['pine  watt', '雾气弥漫的溪谷', 'https://unsplash.com/photos/aerial-shot-of-forest-2Hzmz15wGik'],
+    'trail-ridge': ['Gabriel Francesco', '金色山坡步道上的徒步者', 'https://unsplash.com/photos/hiker-on-a-steep-golden-lit-mountain-path-with-misty-valley-3hD1VIDhIlw'],
+    'trail-villages': ['Yang', '云雾中的梯田', 'https://unsplash.com/photos/banaue-rice-terraces-h7KEJngNrk0'],
+    'story-house': ['Adrian Eperjessy', '秋树与薄雾里升起炊烟的屋子', 'https://unsplash.com/photos/a-small-house-sitting-on-top-of-a-lake-surrounded-by-trees-mysUTgf61cM'],
+    'story-tree': ['Casper van Battum', '浓雾里的一棵树', 'https://unsplash.com/photos/a-lone-tree-on-a-foggy-mountain-side-27RYgiRRF38'],
+    'story-onsen': ['Vivu Vietnam', '山石围起的露天温泉', 'https://unsplash.com/photos/outdoor-hot-spring-pool-with-rocky-waterfall-and-pavilion-XInQQX8gTe0'],
+    'food-dinner': ['Tadahiro Higuchi', '冒着热气的砂锅', 'https://unsplash.com/photos/steaming-nabe-hot-pot-with-vegetables-ra0WmT5QlKQ'],
+    'food-steamer': ['Charles Chen', '竹蒸笼里的包子', 'https://unsplash.com/photos/fish-balls-in-bamboo-steamer-yne3SZalUuQ'],
+    'food-coffee': ['Krists Luhaers', '手冲咖啡', 'https://unsplash.com/photos/person-pouring-coffee-on-brown-ceramic-mug-BQcLZoUGc1g'],
+    'food-pickles': ['Letícia Fracalossi', '玻璃罐里的腌菜', 'https://unsplash.com/photos/a-couple-of-jars-filled-with-lots-of-veggies-tYPz1gSur9o'],
+    'win-rain-dawn': ['Aumi', '落雨的窗与天光', 'https://unsplash.com/photos/water-drops-on-clear-glass-surfacew-h851i8hQWcM'],
+    'win-rain-day': ['C. G.', '挂满雨滴的窗玻璃', 'https://unsplash.com/photos/a-wet-window-with-a-traffic-light-on-it-JgDUVGAXsso'],
+    'win-rain-night': ['Ning Shi', '雨夜窗外的灯', 'https://unsplash.com/photos/water-droplets-on-glass-window-_cqRjq4rp0M'],
+    'win-snow-dawn': ['Maarten Zuidhoorn', '窗帘外是雪', 'https://unsplash.com/photos/a-living-room-filled-with-furniture-and-a-window-U6Vig7xxbuA'],
+    'win-snow-day': ['Ozgu Ozden', '窗外挂雪的树枝', 'https://unsplash.com/photos/white-and-black-tree-covered-with-snow-DQEZzyCSNaI'],
+    'win-snow-dusk': ['Mike Petrucci', '结霜的窗与雪林', 'https://unsplash.com/photos/brown-wooden-pull-wagon-near-trees-covered-by-snow-yqXTfgU8OB4'],
+    'mid-sunny-dawn': ['Daniel Hajdacki', '晨光与雾', 'https://unsplash.com/photos/a-foggy-field-with-a-house-in-the-distance-Jib69zYQFSo'],
+    'mid-sunny-day': ['Mike Petrucci', '绿谷里的原木小屋', 'https://unsplash.com/photos/brown-wooden-house-near-mountains-at-daytime-18joWFjUhKw'],
+    'mid-sunny-dusk': ['Barnabas Davoti', '湖面映着亮灯的木屋', 'https://unsplash.com/photos/log-cabin-with-grass-roof-by-a-lake-EONSYN6QF34'],
+    'mid-sunny-night': ['Andrew Ridley', '夜里亮着一扇窗的木屋', 'https://unsplash.com/photos/grey-wooden-shack-V4wQMKnMyVU'],
+    'mid-rainy-dawn': ['Levi Meir Clancy', '雾笼住的田野', 'https://unsplash.com/photos/a-foggy-field-with-a-farm-in-the-distance-hKBlssHNqgk'],
+    'mid-rainy-day': ['Peter Secan', '蓝色雾气里的山谷', 'https://unsplash.com/photos/aerial-photo-of-mountains-covered-with-mist-QuZmcJ-n52E'],
+    'mid-rainy-dusk': ['Valery Tenevoy', '暮色里亮着窗的木屋', 'https://unsplash.com/photos/brown-wooden-house-near-trees-during-night-time-yZSH2rfS018'],
+    'mid-rainy-night': ['Michael Eufemia', '夜里亮着灯的屋子', 'https://unsplash.com/photos/stone-building-with-glowing-window-N5Gml7sNnHE'],
+    'mid-snowy-dawn': ['Fabian Mardi', '雪原尽头的小屋', 'https://unsplash.com/photos/snow-covered-tree-lot-during-daytime-kVKz9qnJC-k'],
+    'mid-snowy-day': ['Justus Schupmann', '林间空地上的雪中小屋', 'https://unsplash.com/photos/small-wooden-cabin-in-a-snowy-forest-clearing-uMtRMIH2PNs'],
+    'mid-snowy-dusk': ['Juho Luomala', '蓝色暮光里的雪林与木屋', 'https://unsplash.com/photos/a-barn-in-the-middle-of-a-snowy-field-xdh-L1ftkto'],
+    'mid-snowy-night': ['Marco De Hevia', '雪夜里亮着灯的两间木屋', 'https://unsplash.com/photos/brown-wooden-house-on-snow-covered-ground-during-night-time-pHot3McnBus'],
   };
 
   SG.data = {
@@ -96,48 +123,50 @@ window.SG = window.SG || {};
 
     weather: {
       sunny: { label: '晴', icon: 'sun', temp: '12°C', hum: '48%', wind: '北风 2 级', feel: '看得见山脊',
-        line: '适合上落日垭口，记得 17:30 前出发。', img: 'assets/img/hills-dawn.webp', imgAlt: '晨光里的层叠山峦' },
+        line: '适合上落日垭口，记得 17:30 前出发。' },
       rainy: { label: '雨', icon: 'rain', temp: '11°C', hum: '92%', wind: '东风 3 级', feel: '檐下听雨',
-        line: '溪水会涨，今天推荐走林下步道，晚餐加一锅姜汤。', img: 'assets/img/rain-forest.webp', imgAlt: '雨雾中的山林' },
+        line: '溪水会涨，今天推荐走林下步道，晚餐加一锅姜汤。' },
       snowy: { label: '雪', icon: 'snow', temp: '−4°C', hum: '76%', wind: '微风', feel: '谷汤最盛',
-        line: '山路需装防滑链，我们已经把火塘生好了。', img: 'assets/img/snow-cabin.webp', imgAlt: '雪夜里亮着灯的木屋' }
+        line: '山路需装防滑链，我们已经把火塘生好了。' }
     },
     timeNotes: { dawn: '雾还没散', day: '阳光落在檐廊', dusk: '灯一盏盏亮起来', night: '只剩炉火和虫鸣' },
+    timeNames: { dawn: '清晨', day: '白天', dusk: '黄昏', night: '夜晚' },
+    momentLines: { dawn: '天亮之前，雾先醒来。', day: '阳光翻过山脊，落在檐廊上。', dusk: '灯一盏一盏亮起来，山谷慢慢暗下去。', night: '天黑了。只剩炉火、虫鸣，和很近的星星。' },
     clockAt: { dawn: 6 * 60 + 12, day: 13 * 60 + 40, dusk: 18 * 60 + 50, night: 22 * 60 + 40 },
 
     rooms: [
       { id: 'jianshan', name: '见山房', en: 'FACING THE PEAK', size: 32, bed: '1.8 × 2.0 m 原木大床', sleeps: 2, floor: '二层 · 朝西', view: '正对山脊', price: 1280, weekend: 1480,
-        line: '一整面墙的窗，只留给西面的山脊。', photo: 'assets/img/detail-window.webp', photoAlt: '见山房：深色墙面与朝向树林的大窗',
+        line: '一整面墙的窗，只留给西面的山脊。', photo: 'assets/img/room-jianshan.webp', photoAlt: '见山房：木饰面客房，阳光落在床上',
         desc: '床对着整面落地窗，窗帘是半透的亚麻，天亮的时候不用起身，就能看见雾从谷底往上爬。傍晚山脊会先变成金色，再变成紫色。',
         amenities: ['地暖', '落地观景窗', '手冲咖啡套装', '白茶浴品', '加湿器', '窗边坐台', '阅读灯', '耳塞与蒸汽眼罩'],
         gallery: [
-          { src: 'assets/img/detail-window.webp', alt: '见山房：深色墙面与朝向树林的大窗' },
-          { src: 'assets/img/room-jianshan.webp', alt: '见山房：从客房通向露台的走廊，午后有光斜进来' },
-          { src: 'assets/img/detail-desk.webp', alt: '见山房：窗边的木书桌' }] },
+          { src: 'assets/img/room-jianshan.webp', alt: '见山房：木饰面客房，阳光落在床上' },
+          { src: 'assets/img/detail-seat.webp', alt: '见山房：窗边的木质坐台' },
+          { src: 'assets/img/detail-window-dawn.webp', alt: '见山房：整面落地窗与清晨的山谷' }] },
       { id: 'tingxi', name: '听溪房', en: 'CREEK WHISPER', size: 26, bed: '1.5 × 2.0 m 实木床', sleeps: 2, floor: '一层 · 朝北', view: '溪涧与竹林', price: 980, weekend: 1180,
-        line: '开一条窗缝，就能听见溪水。', photo: 'assets/img/room-tingxi.webp', photoAlt: '听溪房：深色木墙与灯下的床',
+        line: '开一条窗缝，就能听见溪水。', photo: 'assets/img/room-tingxi.webp', photoAlt: '听溪房：斜顶木墙与拱窗',
         desc: '房间最小，也最安静。窗下就是溪，夜里水声会盖过一切。墙上有一台唱机，唱片在前台，可以随便借。',
         amenities: ['地暖', '溪景小窗', '黑胶唱机', '阅读灯', '手冲咖啡套装', '白茶浴品', '加湿器', '羊毛盖毯'],
         gallery: [
-          { src: 'assets/img/room-tingxi.webp', alt: '听溪房：深色木墙与灯下的床' },
-          { src: 'assets/img/detail-darkwood.webp', alt: '听溪房：木格栅与暖色壁灯' },
-          { src: 'assets/img/detail-linen.webp', alt: '听溪房：亚麻与陶土色的床品' }] },
+          { src: 'assets/img/room-tingxi.webp', alt: '听溪房：斜顶木墙与拱窗' },
+          { src: 'assets/img/detail-curtain.webp', alt: '听溪房：木窗与纱帘' },
+          { src: 'assets/img/detail-linen.webp', alt: '听溪房：原木墙前的床品' }] },
       { id: 'wuqi', name: '雾起套房', en: 'MIST SUITE', size: 46, bed: '1.8 × 2.0 m 大床', sleeps: 3, floor: '二层 · 朝东南', view: '整条山谷', price: 1880, weekend: 2180,
-        line: '雾从窗前经过时，房间会变成白色。', photo: 'assets/img/room-wuqi.webp', photoAlt: '雾起套房：木饰面客房与通向庭院的玻璃门',
+        line: '雾从窗前经过时，房间会变成白色。', photo: 'assets/img/room-wuqi.webp', photoAlt: '雾起套房：整面玻璃转角的起居区',
         desc: '引了谷汤的泉水进房，室内有一只石头浴缸。有独立的起居区，可以加一张单人床。雾起的时候，整间房像浮在云上。',
         amenities: ['室内温泉石缸', '独立起居区', '地暖', '黑胶唱机', '手冲咖啡套装', '岩茶迎宾', '加湿器', '可加单人床（¥300 / 晚）'],
         gallery: [
-          { src: 'assets/img/room-wuqi.webp', alt: '雾起套房：木饰面客房与通向庭院的玻璃门' },
-          { src: 'assets/img/detail-tub.webp', alt: '雾起套房：引入温泉水的石浴缸' },
-          { src: 'assets/img/detail-bathwin.webp', alt: '雾起套房：带窗的浴室' }] },
+          { src: 'assets/img/room-wuqi.webp', alt: '雾起套房：整面玻璃转角的起居区' },
+          { src: 'assets/img/detail-tub.webp', alt: '雾起套房：临窗的深色浴缸' },
+          { src: 'assets/img/detail-lounge.webp', alt: '雾起套房：深色木起居室与整面窗' }] },
       { id: 'xingye', name: '星野阁楼', en: 'LOFT UNDER STARS', size: 58, bed: '1.8 × 2.0 m 大床 + 2 张 0.9 m 单人床', sleeps: 4, floor: '三层 · 复式', view: '天窗与星子', price: 2280, weekend: 2580,
-        line: '屋顶开了一扇天窗，躺着就能等星星。', photo: 'assets/img/room-xingye.webp', photoAlt: '星野阁楼：带屏风与藤编家具的阁楼卧室',
+        line: '屋顶开了一扇天窗，躺着就能等星星。', photo: 'assets/img/room-xingye.webp', photoAlt: '星野阁楼：斜顶下的卧室与大窗',
         desc: '整栋最高的房间，屋顶斜着一扇天窗。楼下是两张单人床和一张长书桌，楼上是那张大床。适合一家人，或者三个很久没见的朋友。',
         amenities: ['屋顶天窗', '复式两层', '地暖', '长书桌', '黑胶唱机', '手冲咖啡套装', '儿童拖鞋与绘本', '加湿器'],
         gallery: [
-          { src: 'assets/img/room-xingye.webp', alt: '星野阁楼：带屏风与藤编家具的阁楼卧室' },
-          { src: 'assets/img/detail-linen.webp', alt: '星野阁楼：陶土色条纹的床品' },
-          { src: 'assets/img/detail-desk.webp', alt: '星野阁楼：窗边的木书桌' }] }
+          { src: 'assets/img/room-xingye.webp', alt: '星野阁楼：斜顶下的卧室与大窗' },
+          { src: 'assets/img/detail-skylight.webp', alt: '星野阁楼：夜里亮着的屋顶天窗' },
+          { src: 'assets/img/detail-loft.webp', alt: '星野阁楼：木结构夹层' }] }
     ],
 
     onsen: {
@@ -156,8 +185,8 @@ window.SG = window.SG || {};
         snowy: '雪天蒸汽最盛，头发会结霜。我们在池边放了热姜茶。'
       },
       photos: [
-        { src: 'assets/img/detail-tub.webp', alt: '室内石浴缸，引入谷汤泉水' },
-        { src: 'assets/img/detail-bathwin.webp', alt: '带窗的浴室与浴缸' }
+        { src: 'assets/img/onsen-indoor.webp', alt: '室内汤屋：带窗的木质浴池' },
+        { src: 'assets/img/story-onsen.webp', alt: '山石围起的露天温泉' }
       ]
     },
 
@@ -168,34 +197,34 @@ window.SG = window.SG || {};
       meals: [
         { id: 'breakfast', time: '07:30 – 09:30', phase: 'dawn', name: '早餐', en: 'BREAKFAST', title: '土锅白粥，和七种自家腌菜', price: '含在房费内',
           items: ['土锅白粥', '七种自家腌菜', '炭火烤吐司与山蜂蜜', '溪鸡蛋', '应季果酱', '手冲咖啡或云雾茶'],
-          photo: 'assets/img/food-breakfast.webp', photoAlt: '木桌上的早餐：面包、蛋与沙拉' },
+          photo: 'assets/img/food-breakfast.webp', photoAlt: '木桌上的早餐与茶' },
         { id: 'tea', time: '14:30 – 16:30', phase: 'day', name: '下午茶', en: 'AFTERNOON TEA', title: '蒸笼一掀，整个檐廊都是白汽', price: '¥88 / 套',
           items: ['蒸笼松茸包', '炭烤红薯', '桂花米酒', '应季水果', '一壶云雾茶'],
-          photo: 'assets/img/food-tea.webp', photoAlt: '木桌上的白瓷茶壶与茶杯' },
+          photo: 'assets/img/food-steamer.webp', photoAlt: '竹蒸笼里的包子' },
         { id: 'dinner', time: '18:30 开席', phase: 'dusk', name: '晚餐', en: 'DINNER', title: '一桌一锅，土鸡在汤里翻滚', price: '¥288 / 位 · 需预约',
           items: ['高山土鸡锅', '山笋与腊肉', '盐烧溪鱼', '时蔬', '土锅米饭', '餐后甜点（看心情）'],
-          photo: 'assets/img/food-hotpot.webp', photoAlt: '冒着热气的砂锅：鱼与青菜' }
+          photo: 'assets/img/food-dinner.webp', photoAlt: '冒着热气的砂锅' }
       ],
       notes: ['忌口请在预约时备注，最晚提前 24 小时', '晚餐是一起吃的长桌，想独处的可以端回房间', '以上价格均为演示内容']
     },
 
     spaces: [
-      { id: 'fireplace', name: '壁炉厅', en: 'FIREPLACE HALL', time: '21:10', photo: 'assets/img/space-fireplace.webp', alt: '壁炉厅：燃着火的壁炉、书架与两把扶手椅',
-        desc: '三层挑高，一座石砌壁炉，三千册可以借走的书。Wi-Fi 只在这里有一格信号。' },
-      { id: 'table', name: '长桌', en: 'THE LONG TABLE', time: '18:30', photo: 'assets/img/space-living.webp', alt: '拱窗下的客厅与长桌',
+      { id: 'fireplace', name: '壁炉厅', en: 'FIREPLACE HALL', time: '21:10', photo: 'assets/img/space-fireplace.webp', alt: '壁炉厅：挑高的木屋客厅与悬空的柴炉',
+        desc: '屋顶一直斜到三层楼高，梁上吊着一只铸铁柴炉，墙边是三千册可以借走的书。Wi-Fi 只在这里有一格信号。' },
+      { id: 'table', name: '长桌', en: 'THE LONG TABLE', time: '18:30', photo: 'assets/img/space-table.webp', alt: '木墙餐厅里的长桌',
         desc: '一张 4.2 米长的老杉木桌，早餐和晚餐都在这里。不认识的人，常常会聊起来。' },
-      { id: 'engawa', name: '檐廊', en: 'ENGAWA', time: '15:20', photo: 'assets/img/space-veranda.webp', alt: '月光下的木质檐廊与藤椅',
+      { id: 'engawa', name: '檐廊', en: 'ENGAWA', time: '15:20', photo: 'assets/img/space-engawa.webp', alt: '黄昏木廊上的摇椅',
         desc: '沿着南面的一圈窄廊，夏天躺着吹风，冬天晒太阳。雨天从这里看雨最合适。' },
-      { id: 'library', name: '书架与窗台', en: 'LIBRARY NOOK', time: '16:40', photo: 'assets/img/space-library.webp', alt: '顶到天花板的木质书架',
+      { id: 'library', name: '书架与窗台', en: 'LIBRARY NOOK', time: '16:40', photo: 'assets/img/space-library.webp', alt: '书架与窗台：书墙之间的靠窗座位',
         desc: '书大多是住客留下的，扉页上写着他们的城市。窗台铺了垫子，可以窝一下午。' },
-      { id: 'irori', name: '火塘', en: 'IRORI', time: '21:00', photo: 'assets/img/space-lounge.webp', alt: '木质空间里围成一圈的皮面沙发',
+      { id: 'irori', name: '火塘', en: 'IRORI', time: '21:00', photo: 'assets/img/space-irori.webp', alt: '火塘：串灯下的悬空柴炉与两把椅子',
         desc: '晚上九点生火，烤糯米团子和橘子。沈树会讲那个迷路的故事，已经讲了四年。' }
     ],
     spacesMore: ['洗衣房（投币）', '小卖部 · 山货与手作', '瑜伽平台（清晨可借用）', '停车场 8 个车位', '充电桩 ×2'],
 
     routes: [
       { id: 'mist', no: '01', name: '雾起步道', en: 'MIST LOOP', shape: '环线', km: 3.2, hrs: '约 1.5 小时', gain: 110, diff: 1, best: '清晨 · 雨后',
-        photo: 'assets/img/trail-fog.webp', photoAlt: '雾气与晨光里的森林小路',
+        photo: 'assets/img/trail-mist.webp', photoAlt: '雾中森林小路上的行人',
         summary: '从门口出发，绕过杉木林上到观雾台，再从旧林场遗址下来。路缓，走完正好回去吃早餐。',
         ele: [[0, 1280], [0.4, 1302], [0.8, 1330], [1.2, 1366], [1.6, 1390], [2.0, 1362], [2.4, 1320], [2.8, 1298], [3.2, 1280]],
         map: [[404, 424], [356, 380], [318, 336], [318, 286], [366, 248], [426, 262], [456, 318], [440, 380], [404, 424]],
@@ -207,7 +236,7 @@ window.SG = window.SG || {};
         weather: { sunny: '雾散得快，日出后半小时出发最合适。', rainy: '雨后是这条路最好看的时候：整条路都是雾。', snowy: '平缓好走，雪停后一小时内来，脚印只有你的。' },
         gear: '防滑鞋 · 一壶热水（前台可接）' },
       { id: 'creek', no: '02', name: '溪谷溯行', en: 'CREEK WALK', shape: '折返', km: 5.6, hrs: '约 2.5 小时', gain: 180, diff: 2, best: '上午 · 阴天',
-        photo: 'assets/img/trail-creek.webp', photoAlt: '溪谷上的小桥与瀑布',
+        photo: 'assets/img/trail-creek.webp', photoAlt: '雾气弥漫的溪谷',
         summary: '顺着门前的溪往下游走，经过三叠瀑布。路有时在石头上，有时在树根上，鞋子一定会湿。',
         ele: [[0, 1280], [0.6, 1256], [1.2, 1240], [1.8, 1272], [2.3, 1300], [3.0, 1348], [3.6, 1390], [4.1, 1410], [4.6, 1420], [5.6, 1420]],
         map: [[404, 424], [458, 438], [500, 474], [548, 470], [594, 512], [640, 506], [676, 556]],
@@ -219,7 +248,7 @@ window.SG = window.SG || {};
         weather: { sunny: '上午去，瀑布前的石头可以坐很久。', rainy: '溪水会涨，只到石桥。', snowy: '步道结冰，需要冰爪，前台可以借。' },
         gear: '防滑鞋 · 备一双袜子 · 登山杖' },
       { id: 'ridge', no: '03', name: '山脊日落线', en: 'RIDGE SUNSET', shape: '环线', km: 4.8, hrs: '约 3 小时', gain: 340, diff: 3, best: '傍晚 · 晴',
-        photo: 'assets/img/trail-pines.webp', photoAlt: '松林后高耸的山峰',
+        photo: 'assets/img/trail-ridge.webp', photoAlt: '金色山坡步道上的徒步者',
         summary: '从竹林垭口上山脊，到落日垭口看整条山谷变金色。是四条路里最累的，也是最值得的。',
         ele: [[0, 1280], [0.5, 1320], [1.1, 1420], [1.7, 1500], [2.4, 1620], [2.9, 1610], [3.4, 1560], [4.1, 1420], [4.8, 1280]],
         map: [[404, 424], [366, 452], [322, 472], [284, 452], [248, 416], [206, 384], [168, 362], [132, 352], [150, 430], [214, 500], [300, 530], [380, 486], [404, 424]],
@@ -230,7 +259,7 @@ window.SG = window.SG || {};
         weather: { sunny: '17:30 前到落日垭口，可以看见整条山谷变金色。', rainy: '垭口风大路滑，今天不建议。', snowy: '需要雪鞋与向导，请提前一天登记。' },
         gear: '登山鞋 · 风壳 · 头灯（回程天黑）' },
       { id: 'villages', no: '04', name: '古道村落线', en: 'OLD TRAIL', shape: '环线', km: 8.2, hrs: '约 4.5 小时', gain: 260, diff: 3, best: '全天 · 需带便当',
-        photo: 'assets/img/trail-forest.webp', photoAlt: '阳光穿过林间步道',
+        photo: 'assets/img/trail-villages.webp', photoAlt: '云雾中的梯田',
         summary: '沿着石板古道翻到上村和下村，两个加起来不到四十个人的村子。茶亭有热水，阿婆的豆腐要赶早。',
         ele: [[0, 1280], [0.8, 1310], [1.5, 1360], [2.4, 1392], [3.2, 1410], [4.0, 1400], [4.8, 1390], [5.6, 1340], [6.4, 1300], [7.3, 1288], [8.2, 1280]],
         map: [[404, 424], [426, 378], [414, 332], [436, 286], [430, 236], [414, 186], [434, 136], [486, 104], [556, 120], [596, 196], [580, 290], [534, 362], [474, 404], [404, 424]],
@@ -272,5 +301,5 @@ window.SG = window.SG || {};
     ]
   };
 
-  SG.palettes = P;
+  SG.grade = G;
 })();
