@@ -60,7 +60,7 @@ const weather = async (page, w) => {
   await page.click(`${inHero ? '.wx' : '.topbar'} [data-weather-btn="${w}"]`);
   await page.waitForTimeout(2600);
 };
-const time = async (page, t) => { await page.click('#clockBtn'); await page.waitForTimeout(250); await page.click(`#timePop [data-time-btn="${t}"]`); await page.keyboard.press('Escape'); await page.waitForTimeout(1600); };
+const time = async (page, t) => { await page.evaluate(t => SG.atmo.setTime(t), t); await page.waitForTimeout(1700); };
 const state = page => page.evaluate(() => ({ 天气: document.documentElement.dataset.weather, 时刻: document.documentElement.dataset.time, 时钟: document.querySelector('.hero__clock [data-clock]').textContent }));
 // 设了 SG_DEBUG=1 时，每截一屏前多打印一行布局诊断（横向滚动、视觉视口、时间线相位）
 const diag = page => page.evaluate(() => { const r = n => { const b = n.getBoundingClientRect(); return Math.round(b.left) + '..' + Math.round(b.right); }; return `scrollX ${scrollX} vv ${visualViewport.width}x${visualViewport.height}@${visualViewport.offsetLeft},${visualViewport.offsetTop} s${visualViewport.scale} docSW ${document.documentElement.scrollWidth} inner ${innerWidth}x${innerHeight} phase ${SG.atmo.phase.toFixed(2)} mode ${SG.atmo.mode}` + (document.querySelector('.onsen__inner') ? ' onsenInner ' + r(document.querySelector('.onsen__inner')) : ''); });
@@ -96,7 +96,6 @@ if (run('mobile')) {
   for (const id of SECTIONS) { await at(p, '#' + id); await shot(p, `mobile-${id}`); }
   await at(p, '#rooms', 620); await shot(p, 'mobile-rooms-2');
   await instant(p, 0); await p.click('#menuBtn'); await p.waitForTimeout(700); await shot(p, 'mobile-menu'); await p.keyboard.press('Escape');
-  await p.click('#clockBtn'); await p.waitForTimeout(500); await shot(p, 'mobile-clock-pop');
   await p.close();
 }
 if (run('interact')) {
@@ -104,7 +103,6 @@ if (run('interact')) {
   await sweep(p);
   await at(p, '#rooms', 560); await p.hover('.room:nth-child(2) .room__media'); await p.waitForTimeout(1100); await shot(p, 'interact-room-hover');
   await p.click('.room:nth-child(2) [data-preview]'); await p.waitForTimeout(900); await shot(p, 'interact-room-preview'); await p.keyboard.press('Escape');
-  await instant(p, 0); await p.click('#clockBtn'); await p.waitForTimeout(500); await shot(p, 'interact-clock-pop'); await p.keyboard.press('Escape');
   await at(p, '#spaces'); await p.click('[data-space="engawa"]'); await p.waitForTimeout(900); await shot(p, 'interact-space');
   await at(p, '#routes', 470); await p.hover('.route[data-route-item="ridge"]'); await p.waitForTimeout(700); await shot(p, 'interact-route-focus');
   await p.click('.route[data-route-item="ridge"] [data-route]'); await p.waitForTimeout(1000); await shot(p, 'interact-route-viewer'); await p.keyboard.press('Escape');

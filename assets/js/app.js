@@ -44,7 +44,7 @@ window.SG = window.SG || {};
   };
   card.addEventListener('click', e => { if (e.target.closest('[data-close]')) ui.close(); });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { if (!modal.hidden) ui.close(); else if (!pop.hidden) togglePop(false); else if (!sheet.hidden) toggleSheet(false); return; }
+    if (e.key === 'Escape') { if (!modal.hidden) ui.close(); else if (!sheet.hidden) toggleSheet(false); return; }
     if (e.key !== 'Tab' || modal.hidden) return;
     const f = $$('button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])', card).filter(n => n.offsetParent !== null || n.getClientRects().length);
     if (!f.length) return;
@@ -152,10 +152,6 @@ window.SG = window.SG || {};
     $$('.ic--wx use').forEach(n => n.setAttribute('href', '#' + ICONS[w]));
     SG.routes.setWeather(w);
   }
-  function syncTime() {
-    const a = SG.atmo;
-    $$('[data-time-btn]').forEach(b => b.setAttribute('aria-checked', String(a.mode === 'auto' ? b.dataset.timeBtn === 'auto' : b.dataset.timeBtn === a.fixed)));
-  }
   let lastKey = '';
   function syncClockIcon() {
     const k = SG.atmo.timeKey;
@@ -164,17 +160,14 @@ window.SG = window.SG || {};
     $$('.ic--time use').forEach(n => n.setAttribute('href', '#' + TIME_ICON[k]));
   }
 
-  // ---------- 时刻弹层、全屏菜单 ----------
-  const pop = $('#timePop'), clockBtn = $('#clockBtn'), sheet = $('#menuSheet'), menuBtn = $('#menuBtn');
-  function togglePop(open) { pop.hidden = !open; clockBtn.setAttribute('aria-expanded', String(open)); }
+  // ---------- 全屏菜单 ----------
+  const sheet = $('#menuSheet'), menuBtn = $('#menuBtn');
   function toggleSheet(open) {
     sheet.hidden = !open;
     document.body.classList.toggle('sheet-open', open);
     menuBtn.setAttribute('aria-expanded', String(open));
     menuBtn.setAttribute('aria-label', open ? '关闭菜单' : '打开菜单');
   }
-  clockBtn.addEventListener('click', e => { e.stopPropagation(); toggleSheet(false); togglePop(pop.hidden); });
-  document.addEventListener('click', e => { if (!pop.hidden && !e.target.closest('#timePop') && !e.target.closest('#clockBtn')) togglePop(false); });
   menuBtn.addEventListener('click', () => toggleSheet(sheet.hidden));
 
   // ---------- 全局点击 ----------
@@ -182,7 +175,6 @@ window.SG = window.SG || {};
     const t = sel => e.target.closest(sel);
     let n;
     if ((n = t('[data-weather-btn]'))) { SG.atmo.setWeather(n.dataset.weatherBtn); return; }
-    if ((n = t('[data-time-btn]'))) { SG.atmo.setTime(n.dataset.timeBtn); syncTime(); return; }
     if ((n = t('[data-preview]'))) { SG.booking.openRoom(n.dataset.preview); return; }
     if ((n = t('[data-pick]'))) {
       const room = SG.booking.roomOf(n.dataset.pick);
@@ -229,7 +221,7 @@ window.SG = window.SG || {};
     SG.routes.renderList();
     SG.booking.init();
     SG.atmo.init();
-    syncWeather(SG.atmo.to); syncTime(); onScroll();
+    syncWeather(SG.atmo.to); onScroll();
     SG.atmo.on(syncWeather);
     observeAnims(); observeSections();
     // 首屏之后才出现的图片加载完，时间线锚点要重新量一次，进场动效也要补上
