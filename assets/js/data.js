@@ -4,57 +4,27 @@ window.SG = window.SG || {};
 (function () {
   'use strict';
 
-  // 照片矩阵：首屏（hero）与"入夜"过场（mid）按 天气 × 时刻 取图；窗景小图（win）按时刻取图，
-  // 雨天 / 雪天有实景窗景就替换，缺的回退到同一天气的相邻时刻，再回退到晴天；谷汤只按天气换图。
-  const KEYS = ['dawn', 'day', 'dusk', 'night'];
-  const full = pre => { const o = {}; ['sunny', 'rainy', 'snowy'].forEach(w => { o[w] = {}; KEYS.forEach(t => { o[w][t] = pre + w + '-' + t; }); }); return o; };
+  // 照片矩阵：页面固定在清晨这一个时刻，每个取景框在每种天气下各有一张照片——
+  // 首屏（hero）、窗景小图（win，雨雪天换成落雨玻璃 / 窗外积雪）、谷汤（onsen）。
   SG.scenes = {
-    hero: { sizes: [1200, 1600, 2200], tab: full('hero-') },
-    win: { sizes: [640], tab: {
-      sunny: { dawn: 'win-dawn', day: 'win-day', dusk: 'win-dusk', night: 'win-night' },
-      rainy: { dawn: 'win-rain-dawn', day: 'win-rain-day', night: 'win-rain-night' },
-      snowy: { dawn: 'win-snow-dawn', day: 'win-snow-day', dusk: 'win-snow-dusk' }
-    } },
-    onsen: { sizes: [1200, 2000], tab: { sunny: { all: 'onsen-sunny' }, rainy: { all: 'onsen-rainy' }, snowy: { all: 'onsen-snowy' } } }
+    hero: { sizes: [1200, 1600, 2200], tab: { sunny: 'hero-sunny-dawn', rainy: 'hero-rainy-dawn', snowy: 'hero-snowy-dawn' } },
+    win: { sizes: [640], tab: { sunny: 'win-dawn', rainy: 'win-rain-dawn', snowy: 'win-snow-dawn' } },
+    onsen: { sizes: [1200, 2000], tab: { sunny: 'onsen-sunny', rainy: 'onsen-rainy', snowy: 'onsen-snowy' } }
   };
 
-  // 每种天气 × 时刻的"调色"：scrim 是首屏底部压暗、side 是文字所在的左侧压暗（都为了保证文字可读），
+  // 每种天气的"调色"：scrim 是首屏底部压暗、side 是文字所在的左侧压暗（都为了保证文字可读），
   // veil / veilO 是色罩，mist / steam 是雾气与蒸汽的浓度。
   const G = {
-    sunny: {
-      dawn: { scrim: .74, side: .72, veil: '#1a2233', veilO: .1, mist: .5, steam: .4 },
-      day: { scrim: .6, side: .9, veil: '#141a24', veilO: 0, mist: .2, steam: .3 },
-      dusk: { scrim: .7, side: .66, veil: '#150e14', veilO: .1, mist: .28, steam: .45 },
-      night: { scrim: .78, side: .6, veil: '#070a14', veilO: .24, mist: .12, steam: .4 }
-    },
-    rainy: {
-      dawn: { scrim: .8, side: .78, veil: '#1d262e', veilO: .16, mist: .68, steam: .6 },
-      day: { scrim: .72, side: .82, veil: '#161d24', veilO: .16, mist: .58, steam: .55 },
-      dusk: { scrim: .78, side: .78, veil: '#12161d', veilO: .18, mist: .58, steam: .6 },
-      night: { scrim: .8, side: .68, veil: '#080b12', veilO: .26, mist: .34, steam: .6 }
-    },
-    snowy: {
-      dawn: { scrim: .82, side: .86, veil: '#27303f', veilO: .1, mist: .46, steam: .55 },
-      day: { scrim: .84, side: .95, veil: '#1c2430', veilO: .12, mist: .38, steam: .5 },
-      dusk: { scrim: .76, side: .78, veil: '#141a2a', veilO: .14, mist: .4, steam: .6 },
-      night: { scrim: .78, side: .68, veil: '#080c18', veilO: .2, mist: .22, steam: .6 }
-    }
+    sunny: { scrim: .74, side: .72, veil: '#1a2233', veilO: .1, mist: .5, steam: .4 },
+    rainy: { scrim: .8, side: .78, veil: '#1d262e', veilO: .16, mist: .68, steam: .6 },
+    snowy: { scrim: .82, side: .86, veil: '#27303f', veilO: .1, mist: .46, steam: .55 }
   };
 
-  // 图片署名：文件名 → [作者, 中文说明, 图片页]；全部来自 Unsplash（Unsplash License），只是氛围示意
+    // 图片署名：文件名 → [作者, 中文说明, 图片页]；全部来自 Unsplash（Unsplash License），只是氛围示意
   SG.credits = {
     'hero-sunny-dawn': ['Istvan Gyimesi', '清晨湖畔，雾中的木屋', 'https://unsplash.com/photos/brown-house-near-body-of-water-during-daytime-wfKCxFTQ7L0'],
-    'hero-sunny-day': ['Ruben Hanssen', '草坡上的原木小屋，远处是雾中的山脊', 'https://unsplash.com/photos/brown-wooden-house-on-green-grass-field-near-green-trees-and-mountains-during-daytime-D3GYSD-eHUw'],
-    'hero-sunny-dusk': ['Derek Sears', '暮色里亮着灯的木屋', 'https://unsplash.com/photos/lighted-brown-wooden-cabin-near-pine-tree-during-night-time-AZAF_lVud64'],
-    'hero-sunny-night': ['Jake Hinds', '银河下亮着灯的木屋', 'https://unsplash.com/photos/silhouette-of-house-near-trees-during-nighttime-43-QgSVp1tk'],
     'hero-rainy-dawn': ['m c', '浓雾里的木屋', 'https://unsplash.com/photos/small-wooden-cabin-on-a-grassy-hill-in-fog-hCCIYRuteg8'],
-    'hero-rainy-day': ['Chris Jones', '阴天里整面玻璃的木屋', 'https://unsplash.com/photos/a-group-of-benches-sitting-on-top-of-a-lush-green-field-lMbHT44KRi4'],
-    'hero-rainy-dusk': ['Jacob Granneman', '雨雾中亮着窗的木屋', 'https://unsplash.com/photos/a-house-with-a-green-roof-surrounded-by-trees-oxm7rLpGwEk'],
-    'hero-rainy-night': ['Niko Saparilas', '雨夜里亮着灯的长屋', 'https://unsplash.com/photos/a-house-on-a-dock-surrounded-by-water-uzn2rV3D3_o'],
     'hero-snowy-dawn': ['Yuhan Du', '晨光里的雪中小屋', 'https://unsplash.com/photos/a-cabin-in-the-middle-of-a-snowy-forest-aCH6-PTLZUs'],
-    'hero-snowy-day': ['Ahmet Yüksek', '深雪里的木屋与挂雪的杉树', 'https://unsplash.com/photos/a-small-wooden-cabin-in-a-snowy-forest-RLrcAlok7WQ'],
-    'hero-snowy-dusk': ['Sean C Davis', '蓝调时分亮着灯的雪中木屋', 'https://unsplash.com/photos/cozy-cabin-glowing-in-the-snowy-woods-at-night-EwwVAaxZ4DM'],
-    'hero-snowy-night': ['Dennis Haug', '雪松间亮着灯的木屋', 'https://unsplash.com/photos/a-house-in-the-middle-of-a-snow-covered-forest-QJ2nHy1YGFY'],
     'win-dawn': ['Andrew Ridley', '卧室整面窗外的清晨山谷', 'https://unsplash.com/photos/brown-and-white-blanket-beside-with-framed-glass-window-9sTuZHhYyMw'],
     'win-day': ['Clay Banks', '木屋客厅与望向树林的大窗', 'https://unsplash.com/photos/a-living-room-with-a-couch-and-a-fireplace-DNt5A4T0-Rs'],
     'win-dusk': ['Michael McKay', '夕阳斜进来的窗边', 'https://unsplash.com/photos/sunlight-streams-into-a-camper-window-overlooking-a-lake-vVNYP1NgPDY'],
@@ -94,11 +64,7 @@ window.SG = window.SG || {};
     'food-coffee': ['Krists Luhaers', '手冲咖啡', 'https://unsplash.com/photos/person-pouring-coffee-on-brown-ceramic-mug-BQcLZoUGc1g'],
     'food-pickles': ['Letícia Fracalossi', '玻璃罐里的腌菜', 'https://unsplash.com/photos/a-couple-of-jars-filled-with-lots-of-veggies-tYPz1gSur9o'],
     'win-rain-dawn': ['Aumi', '落雨的窗与天光', 'https://unsplash.com/photos/water-drops-on-clear-glass-surfacew-h851i8hQWcM'],
-    'win-rain-day': ['C. G.', '挂满雨滴的窗玻璃', 'https://unsplash.com/photos/a-wet-window-with-a-traffic-light-on-it-JgDUVGAXsso'],
-    'win-rain-night': ['Ning Shi', '雨夜窗外的灯', 'https://unsplash.com/photos/water-droplets-on-glass-window-_cqRjq4rp0M'],
     'win-snow-dawn': ['Maarten Zuidhoorn', '窗帘外是雪', 'https://unsplash.com/photos/a-living-room-filled-with-furniture-and-a-window-U6Vig7xxbuA'],
-    'win-snow-day': ['Ozgu Ozden', '窗外挂雪的树枝', 'https://unsplash.com/photos/white-and-black-tree-covered-with-snow-DQEZzyCSNaI'],
-    'win-snow-dusk': ['Mike Petrucci', '结霜的窗与雪林', 'https://unsplash.com/photos/brown-wooden-pull-wagon-near-trees-covered-by-snow-yqXTfgU8OB4'],
   };
 
   SG.data = {
@@ -116,9 +82,6 @@ window.SG = window.SG || {};
       snowy: { label: '雪', icon: 'snow', temp: '−4°C', hum: '76%', wind: '微风', feel: '谷汤最盛',
         line: '山路需装防滑链，我们已经把火塘生好了。' }
     },
-    timeNotes: { dawn: '雾还没散', day: '阳光落在檐廊', dusk: '灯一盏盏亮起来', night: '只剩炉火和虫鸣' },
-    timeNames: { dawn: '清晨', day: '白天', dusk: '黄昏', night: '夜晚' },
-    clockAt: { dawn: 6 * 60 + 12, day: 13 * 60 + 40, dusk: 18 * 60 + 50, night: 22 * 60 + 40 },
 
     rooms: [
       { id: 'jianshan', name: '见山房', en: 'FACING THE PEAK', size: 32, bed: '1.8 × 2.0 m 原木大床', sleeps: 2, floor: '二层 · 朝西', view: '正对山脊', price: 1280, weekend: 1480,
@@ -181,13 +144,13 @@ window.SG = window.SG || {};
       lead: '没有菜单可以点，每天吃什么，看后园的菜地、邻村阿婆的豆腐，和山里刚刚长出来的东西。八成食材来自三十公里内。',
       source: '后园菜地 · 邻村豆腐 · 山笋与菌子 · 溪鱼 · 土锅米饭',
       meals: [
-        { id: 'breakfast', time: '07:30 – 09:30', phase: 'dawn', name: '早餐', en: 'BREAKFAST', title: '土锅白粥，和七种自家腌菜', price: '含在房费内',
+        { id: 'breakfast', time: '07:30 – 09:30', name: '早餐', en: 'BREAKFAST', title: '土锅白粥，和七种自家腌菜', price: '含在房费内',
           items: ['土锅白粥', '七种自家腌菜', '炭火烤吐司与山蜂蜜', '溪鸡蛋', '应季果酱', '手冲咖啡或云雾茶'],
           photo: 'assets/img/food-breakfast.webp', photoAlt: '木桌上的早餐与茶' },
-        { id: 'tea', time: '14:30 – 16:30', phase: 'day', name: '下午茶', en: 'AFTERNOON TEA', title: '蒸笼一掀，整个檐廊都是白汽', price: '¥88 / 套',
+        { id: 'tea', time: '14:30 – 16:30', name: '下午茶', en: 'AFTERNOON TEA', title: '蒸笼一掀，整个檐廊都是白汽', price: '¥88 / 套',
           items: ['蒸笼松茸包', '炭烤红薯', '桂花米酒', '应季水果', '一壶云雾茶'],
           photo: 'assets/img/food-steamer.webp', photoAlt: '竹蒸笼里的包子' },
-        { id: 'dinner', time: '18:30 开席', phase: 'dusk', name: '晚餐', en: 'DINNER', title: '一桌一锅，土鸡在汤里翻滚', price: '¥288 / 位 · 需预约',
+        { id: 'dinner', time: '18:30 开席', name: '晚餐', en: 'DINNER', title: '一桌一锅，土鸡在汤里翻滚', price: '¥288 / 位 · 需预约',
           items: ['高山土鸡锅', '山笋与腊肉', '盐烧溪鱼', '时蔬', '土锅米饭', '餐后甜点（看心情）'],
           photo: 'assets/img/food-dinner.webp', photoAlt: '冒着热气的砂锅' }
       ],

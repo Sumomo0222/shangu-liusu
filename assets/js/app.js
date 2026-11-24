@@ -9,7 +9,6 @@ window.SG = window.SG || {};
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const pad2 = n => String(n).padStart(2, '0');
   const ICONS = { sunny: 'i-sun', rainy: 'i-rain', snowy: 'i-snow' };
-  const TIME_ICON = { dawn: 'i-dawn', day: 'i-sun', dusk: 'i-dawn', night: 'i-moon' };
 
   // ---------- 弹层与提示 ----------
   const ui = SG.ui = {};
@@ -100,7 +99,6 @@ window.SG = window.SG || {};
         <figure class="meal__media frame"><img src="${m.photo}" alt="${esc(m.photoAlt)}" loading="lazy" decoding="async"></figure>
         <div class="meal__head">
           <p class="meal__time"><em>${m.name}</em><span>${m.en}</span><b>${m.time}</b></p>
-          <b class="meal__now">页面时钟走到这里</b>
         </div>
         <h3 class="meal__title">${esc(m.title)}</h3>
         <ul class="meal__items">${m.items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
@@ -152,13 +150,6 @@ window.SG = window.SG || {};
     $$('.ic--wx use').forEach(n => n.setAttribute('href', '#' + ICONS[w]));
     SG.routes.setWeather(w);
   }
-  let lastKey = '';
-  function syncClockIcon() {
-    const k = SG.atmo.timeKey;
-    if (k === lastKey) return;
-    lastKey = k;
-    $$('.ic--time use').forEach(n => n.setAttribute('href', '#' + TIME_ICON[k]));
-  }
 
   // ---------- 全屏菜单 ----------
   const sheet = $('#menuSheet'), menuBtn = $('#menuBtn');
@@ -194,7 +185,6 @@ window.SG = window.SG || {};
   let raf = 0;
   function onScroll() {
     topbar.classList.toggle('is-solid', scrollY > innerHeight - 96);
-    syncClockIcon();
     raf = 0;
   }
   addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(onScroll); }, { passive: true });
@@ -225,7 +215,7 @@ window.SG = window.SG || {};
     SG.atmo.on(syncWeather);
     observeAnims(); observeSections();
     // 首屏之后才出现的图片加载完，时间线锚点要重新量一次，进场动效也要补上
-    addEventListener('load', () => { SG.atmo.measure(); observeAnims(); }, { once: true });
+    addEventListener('load', observeAnims, { once: true });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

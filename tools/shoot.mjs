@@ -60,8 +60,7 @@ const weather = async (page, w) => {
   await page.click(`${inHero ? '.wx' : '.topbar'} [data-weather-btn="${w}"]`);
   await page.waitForTimeout(2600);
 };
-const time = async (page, t) => { await page.evaluate(t => SG.atmo.setTime(t), t); await page.waitForTimeout(1700); };
-const state = page => page.evaluate(() => ({ 天气: document.documentElement.dataset.weather, 时刻: document.documentElement.dataset.time, 时钟: document.querySelector('.hero__clock [data-clock]').textContent }));
+const state = page => page.evaluate(() => ({ 天气: document.documentElement.dataset.weather }));
 // 设了 SG_DEBUG=1 时，每截一屏前多打印一行布局诊断（横向滚动、视觉视口、时间线相位）
 const diag = page => page.evaluate(() => { const r = n => { const b = n.getBoundingClientRect(); return Math.round(b.left) + '..' + Math.round(b.right); }; return `scrollX ${scrollX} vv ${visualViewport.width}x${visualViewport.height}@${visualViewport.offsetLeft},${visualViewport.offsetTop} s${visualViewport.scale} docSW ${document.documentElement.scrollWidth} inner ${innerWidth}x${innerHeight} phase ${SG.atmo.phase.toFixed(2)} mode ${SG.atmo.mode}` + (document.querySelector('.onsen__inner') ? ' onsenInner ' + r(document.querySelector('.onsen__inner')) : ''); });
 const shot = (page, name) => (process.env.SG_DEBUG ? diag(page).then(d => console.log('  [' + name + '] ' + d)) : Promise.resolve()).then(() => page.screenshot({ path: join(OUT, name + '.png'), timeout: 90000 }));
@@ -76,10 +75,7 @@ if (run('hero')) {
 }
 if (run('weather')) {
   const p = await open({ width: 1440, height: 900 });
-  for (const w of ['sunny', 'rainy', 'snowy']) {
-    await weather(p, w);
-    for (const t of ['dawn', 'day', 'dusk', 'night']) { await time(p, t); await shot(p, `hero-${w}-${t}`); }
-  }
+  for (const w of ['sunny', 'rainy', 'snowy']) { await weather(p, w); await shot(p, `hero-${w}`); }
   await p.close();
 }
 if (run('sections')) {
@@ -108,8 +104,8 @@ if (run('interact')) {
   await p.click('.route[data-route-item="ridge"] [data-route]'); await p.waitForTimeout(1000); await shot(p, 'interact-route-viewer'); await p.keyboard.press('Escape');
   await at(p, '#book'); await p.click('[data-reserve]'); await p.waitForTimeout(800); await shot(p, 'interact-reserve');
   await p.click('.reserve form .check'); await p.click('.reserve form button[type="submit"]'); await p.waitForTimeout(1000); await shot(p, 'interact-reserve-done'); await p.keyboard.press('Escape');
-  await weather(p, 'snowy'); await time(p, 'night'); await at(p, '#onsen'); await shot(p, 'interact-onsen-snowy');
-  await weather(p, 'rainy'); await time(p, 'day'); await shot(p, 'interact-onsen-rainy');
+  await weather(p, 'snowy'); await at(p, '#onsen'); await shot(p, 'interact-onsen-snowy');
+  await weather(p, 'rainy'); await shot(p, 'interact-onsen-rainy');
   await at(p, '[data-footer]'); await p.click('.credits summary'); await p.waitForTimeout(500); await shot(p, 'interact-footer');
   await p.close();
 }
